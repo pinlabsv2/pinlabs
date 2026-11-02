@@ -6,7 +6,7 @@ type Migration = {
 };
 
 async function runAll(tx: QueryRunner, statements: string[]) {
-  for (const statement of statements) await tx.query(statement);
+  if (statements.length) await tx.query(statements.join(';\n'));
 }
 
 const constraints: Migration = {
@@ -260,8 +260,13 @@ export async function runMigrations(db: Queryable) {
   for (const migration of migrations) {
     if (applied.has(migration.version)) continue;
     await db.transaction(async (tx) => {
+      const { rows: claimed } = await tx.query(
+        `INSERT INTO "SchemaMigrations" ("version") VALUES ($1)
+         ON CONFLICT ("version") DO NOTHING RETURNING "version"`,
+        [migration.version],
+      );
+      if (!claimed[0]) return;
       await migration.up(tx);
-      await tx.query(`INSERT INTO "SchemaMigrations" ("version") VALUES ($1)`, [migration.version]);
     });
   }
 }

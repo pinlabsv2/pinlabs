@@ -32,7 +32,13 @@ async function connect(options: DatabaseOptions = {}): Promise<Queryable> {
   if (url) {
     const pg = await import('pg');
     const Pool = (pg as any).default?.Pool ?? (pg as any).Pool;
-    const pool = new Pool({ connectionString: normalizeDatabaseUrl(url), max: 3 });
+    const pool = new Pool({
+      connectionString: normalizeDatabaseUrl(url),
+      max: 3,
+      connectionTimeoutMillis: 8_000,
+      idleTimeoutMillis: 10_000,
+      allowExitOnIdle: true,
+    });
     return {
       query: (text, params) => pool.query(text, params as any[]),
       transaction: async <T>(callback: (tx: QueryRunner) => Promise<T>) => {
@@ -66,9 +72,16 @@ async function connect(options: DatabaseOptions = {}): Promise<Queryable> {
   }
   const database = memory ? new PGlite() : new PGlite(dir);
   await database.waitReady;
+  const query = async (runner: any, text: string, params?: unknown[]) => {
+    if ((!params || params.length === 0) && text.includes(';\n')) {
+      const results = await runner.exec(text);
+      return { rows: results.at(-1)?.rows ?? [] };
+    }
+    return runner.query(text, params as any[]) as Promise<{ rows: any[] }>;
+  };
   return {
-    query: (text, params) => database.query(text, params as any[]) as any,
-    transaction: (callback) => database.transaction((tx) => callback({ query: (text, params) => tx.query(text, params as any[]) as any })),
+    query: (text, params) => query(database, text, params),
+    transaction: (callback) => database.transaction((tx) => callback({ query: (text, params) => query(tx, text, params) })),
     close: () => database.close(),
   };
 }

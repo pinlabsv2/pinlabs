@@ -149,29 +149,54 @@ export const TABLES: Record<string, Record<string, Col>> = {
 
 export const AUTO_NOW: Record<string, string[]> = { Orders: ['placedAt'] };
 
+const BASE_SCHEMA_VERSION = '000-base-schema-v1';
+
 export async function migrate(db: Queryable) {
-  for (const [table, cols] of Object.entries(TABLES)) {
-    await db.query(`CREATE TABLE IF NOT EXISTS "${table}" ("id" text PRIMARY KEY, "createdAt" timestamptz NOT NULL DEFAULT now(), "updatedAt" timestamptz NOT NULL DEFAULT now())`);
-    for (const [column, type] of Object.entries(cols)) {
-      await db.query(`ALTER TABLE "${table}" ADD COLUMN IF NOT EXISTS "${column}" ${type}${AUTO_NOW[table]?.includes(column) ? ' DEFAULT now()' : ''}`);
-    }
-  }
+  await db.query(`CREATE TABLE IF NOT EXISTS "SchemaMigrations" (
+    "version" text PRIMARY KEY,
+    "appliedAt" timestamptz NOT NULL DEFAULT now()
+  )`);
+  const { rows: baseRows } = await db.query(
+    `SELECT "version" FROM "SchemaMigrations" WHERE "version" = $1`,
+    [BASE_SCHEMA_VERSION],
+  );
 
-  await db.query(`CREATE UNIQUE INDEX IF NOT EXISTS users_email_idx ON "Users" (lower("email"))`);
-  await db.query(`CREATE INDEX IF NOT EXISTS orders_customer_idx ON "Orders" ("customer")`);
-  await db.query(`CREATE INDEX IF NOT EXISTS orders_tracking_idx ON "Orders" ("trackingNumber")`);
+  if (!baseRows[0]) {
+    await db.transaction(async (tx) => {
+      const { rows: claimed } = await tx.query(
+        `INSERT INTO "SchemaMigrations" ("version") VALUES ($1)
+         ON CONFLICT ("version") DO NOTHING RETURNING "version"`,
+        [BASE_SCHEMA_VERSION],
+      );
+      if (!claimed[0]) return;
 
-  const { rows } = await db.query(`SELECT count(*)::int AS n FROM "StoreSettings"`);
-  if (Number(rows[0]?.n) === 0) {
-    for (const [table, records] of Object.entries(seed as Record<string, Record<string, unknown>[]>)) {
-      for (const record of records) {
-        const keys = Object.keys(record).filter((key) => key in TABLES[table]);
-        await db.query(
-          `INSERT INTO "${table}" ("id", ${keys.map((key) => `"${key}"`).join(', ')}) VALUES ($1, ${keys.map((_, index) => `$${index + 2}`).join(', ')})`,
-          [crypto.randomUUID(), ...keys.map((key) => record[key])],
-        );
+      const ddl: string[] = [];
+      for (const [table, cols] of Object.entries(TABLES)) {
+        ddl.push(`CREATE TABLE IF NOT EXISTS "${table}" ("id" text PRIMARY KEY, "createdAt" timestamptz NOT NULL DEFAULT now(), "updatedAt" timestamptz NOT NULL DEFAULT now())`);
+        for (const [column, type] of Object.entries(cols)) {
+          ddl.push(`ALTER TABLE "${table}" ADD COLUMN IF NOT EXISTS "${column}" ${type}${AUTO_NOW[table]?.includes(column) ? ' DEFAULT now()' : ''}`);
+        }
       }
-    }
+      ddl.push(
+        `CREATE UNIQUE INDEX IF NOT EXISTS users_email_idx ON "Users" (lower("email"))`,
+        `CREATE INDEX IF NOT EXISTS orders_customer_idx ON "Orders" ("customer")`,
+        `CREATE INDEX IF NOT EXISTS orders_tracking_idx ON "Orders" ("trackingNumber")`,
+      );
+      await tx.query(ddl.join(';\n'));
+
+      const { rows } = await tx.query(`SELECT count(*)::int AS n FROM "StoreSettings"`);
+      if (Number(rows[0]?.n) === 0) {
+        for (const [table, records] of Object.entries(seed)) {
+          for (const record of records) {
+            const keys = Object.keys(record).filter((key) => key in TABLES[table]);
+            await tx.query(
+              `INSERT INTO "${table}" ("id", ${keys.map((key) => `"${key}"`).join(', ')}) VALUES ($1, ${keys.map((_, index) => `$${index + 2}`).join(', ')})`,
+              [crypto.randomUUID(), ...keys.map((key) => record[key])],
+            );
+          }
+        }
+      }
+    });
   }
 
   await runMigrations(db);
