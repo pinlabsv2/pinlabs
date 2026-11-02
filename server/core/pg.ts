@@ -16,12 +16,23 @@ export type DatabaseOptions = {
 let dbPromise: Promise<Queryable> | null = null;
 let testDb: Queryable | null = null;
 
+export function normalizeDatabaseUrl(value: string) {
+  if (!/^postgres(?:ql)?:\/\//i.test(value)) return value;
+  const parsed = new URL(value);
+  const sslMode = parsed.searchParams.get('sslmode')?.toLowerCase();
+  if (sslMode === 'prefer' || sslMode === 'require' || sslMode === 'verify-ca') {
+    parsed.searchParams.set('sslmode', 'verify-full');
+    return parsed.toString();
+  }
+  return value;
+}
+
 async function connect(options: DatabaseOptions = {}): Promise<Queryable> {
   const url = options.databaseUrl !== undefined ? options.databaseUrl : process.env.DATABASE_URL;
   if (url) {
     const pg = await import('pg');
     const Pool = (pg as any).default?.Pool ?? (pg as any).Pool;
-    const pool = new Pool({ connectionString: url, max: 3 });
+    const pool = new Pool({ connectionString: normalizeDatabaseUrl(url), max: 3 });
     return {
       query: (text, params) => pool.query(text, params as any[]),
       transaction: async <T>(callback: (tx: QueryRunner) => Promise<T>) => {
