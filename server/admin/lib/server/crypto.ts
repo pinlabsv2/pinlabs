@@ -1,7 +1,7 @@
-import { db } from '../../../core/db';
-import type { StoreSettingsRecordType } from '../../../core/db';
-import { claimOrderPayment, releaseOrderReservation } from '../../../core/orderState';
-import { notifyCustomer } from './notify';
+import { db } from '../../../core/db.js';
+import type { StoreSettingsRecordType } from '../../../core/db.js';
+import { claimOrderPayment, releaseOrderReservation } from '../../../core/orderState.js';
+import { notifyCustomer } from './notify.js';
 
 export const CURRENCIES = ['BTC', 'ETH', 'SOL', 'LTC', 'USDT-ERC20', 'USDT-TRC20', 'USDC', 'TRX'] as const;
 export type PayCurrency = (typeof CURRENCIES)[number];

@@ -1,4 +1,4 @@
-import { ProviderError, type ReviewImageStorage, type StoredObject } from './types';
+import { ProviderError, type ReviewImageStorage, type StoredObject } from './types.js';
 
 const objectPath = (key: string) => key.split('/').map(encodeURIComponent).join('/');
 

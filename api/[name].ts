@@ -1,4 +1,4 @@
-import { handle } from '../server/handler';
+import { handle } from '../server/handler.js';
 
 export const config = { maxDuration: 30, api: { bodyParser: false } };
 

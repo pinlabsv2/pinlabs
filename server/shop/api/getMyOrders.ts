@@ -1,8 +1,8 @@
 import { z } from 'zod';
-import { createEndpoint } from '../../core/endpoint';
-import { db } from '../../core/db';
-import { orderSchema, toOrder } from '../lib/server/orderShape';
-import { refreshStale } from '../lib/server/tracking';
+import { createEndpoint } from '../../core/endpoint.js';
+import { db } from '../../core/db.js';
+import { orderSchema, toOrder } from '../lib/server/orderShape.js';
+import { refreshStale } from '../lib/server/tracking.js';
 
 export default createEndpoint({
   description: "Lists the signed-in customer's orders",

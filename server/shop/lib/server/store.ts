@@ -1,4 +1,4 @@
-import { db } from '../../../core/db';
+import { db } from '../../../core/db.js';
 
 export async function getSettings() {
   const { records } = await db.storeSettings.findAll({ limit: 1 });

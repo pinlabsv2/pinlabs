@@ -1,4 +1,4 @@
-import { ProviderError, type CreatePaymentInput, type CreatePayoutInput, type PaymentProvider, type PaymentSnapshot, type PaymentState, type PayoutDestination, type PayoutProvider, type PayoutQuote, type PayoutQuoteInput, type PayoutSnapshot, type PayoutState } from './types';
+import { ProviderError, type CreatePaymentInput, type CreatePayoutInput, type PaymentProvider, type PaymentSnapshot, type PaymentState, type PayoutDestination, type PayoutProvider, type PayoutQuote, type PayoutQuoteInput, type PayoutSnapshot, type PayoutState } from './types.js';
 
 const paymentStates = new Set<PaymentState>(['waiting', 'partially_paid', 'confirming', 'confirmed', 'sending', 'finished', 'expired', 'failed']);
 const asObject = (value: unknown): Record<string, unknown> => value && typeof value === 'object' ? value as Record<string, unknown> : {};

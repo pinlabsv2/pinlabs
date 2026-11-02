@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { createEndpoint } from '../endpoint';
-import { clearCookie } from '../auth';
+import { createEndpoint } from '../endpoint.js';
+import { clearCookie } from '../auth.js';
 
 export default createEndpoint({
   description: 'Signs out',

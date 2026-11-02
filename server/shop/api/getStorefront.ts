@@ -1,8 +1,8 @@
 import { z } from 'zod';
-import { createEndpoint } from '../../core/endpoint';
-import { db } from '../../core/db';
-import { getSettings } from '../lib/server/store';
-import { CURRENCIES, META, walletFor } from '../lib/server/crypto';
+import { createEndpoint } from '../../core/endpoint.js';
+import { db } from '../../core/db.js';
+import { getSettings } from '../lib/server/store.js';
+import { CURRENCIES, META, walletFor } from '../lib/server/crypto.js';
 
 export default createEndpoint({
   description: 'Loads the storefront: products, categories, promo banner, shipping rules, support contacts and policies',

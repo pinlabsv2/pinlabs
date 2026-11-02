@@ -1,6 +1,6 @@
-import { db } from './db';
-import type { OrdersRecordType } from './types';
-import type { QueryRunner } from './pg';
+import { db } from './db.js';
+import type { OrdersRecordType } from './types.js';
+import type { QueryRunner } from './pg.js';
 
 async function lockOrderState(tx: QueryRunner) {
   // The seeded settings row provides the same transaction lock in Postgres and PGlite.

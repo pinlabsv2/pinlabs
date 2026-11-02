@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { OrdersRecordType } from '../../../core/db';
+import type { OrdersRecordType } from '../../../core/db.js';
 
 export const orderSchema = z.object({
   id: z.string(),

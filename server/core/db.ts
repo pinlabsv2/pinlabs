@@ -2,10 +2,10 @@
  * Small typed data-access layer. Mirrors the API the endpoints were written against:
  *   db.<table>.findAll / findOne / create / update / delete / bulkCreate,  db.sql({ query, params }),  db.auth.updateUserProfile
  */
-import { getDb } from './pg';
-import { TABLES } from './schema';
-export * from './types';
-import type * as T from './types';
+import { getDb } from './pg.js';
+import { TABLES } from './schema.js';
+export * from './types.js';
+import type * as T from './types.js';
 
 type Op = { contains?: unknown; not?: unknown; in?: unknown[]; notIn?: unknown[]; lt?: unknown; lte?: unknown; gt?: unknown; gte?: unknown };
 type FindAll<R> = { filters?: Partial<Record<keyof R | string, unknown | Op>>; sort?: { field: string; direction?: 'asc' | 'desc' }[]; limit?: number; offset?: number; fields?: string[] };

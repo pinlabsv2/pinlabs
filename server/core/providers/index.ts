@@ -1,15 +1,15 @@
-export * from './types';
-export * from './nowPayments';
-export * from './resend';
-export * from './track17';
-export * from './vercelBlob';
-export * from './fakes';
+export * from './types.js';
+export * from './nowPayments.js';
+export * from './resend.js';
+export * from './track17.js';
+export * from './vercelBlob.js';
+export * from './fakes.js';
 
-import { CaptureEmailProvider, FakePaymentProvider, FakePayoutProvider, FakeReviewImageStorage, FakeTrackingProvider } from './fakes';
-import { NowPaymentsProvider } from './nowPayments';
-import { ResendProvider } from './resend';
-import { Track17Provider } from './track17';
-import { VercelBlobStorage } from './vercelBlob';
+import { CaptureEmailProvider, FakePaymentProvider, FakePayoutProvider, FakeReviewImageStorage, FakeTrackingProvider } from './fakes.js';
+import { NowPaymentsProvider } from './nowPayments.js';
+import { ResendProvider } from './resend.js';
+import { Track17Provider } from './track17.js';
+import { VercelBlobStorage } from './vercelBlob.js';
 
 export function createProviderBundle(env: NodeJS.ProcessEnv = process.env) {
   const fakePayments = (env.PAYMENT_PROVIDER_MODE || 'fake') === 'fake';

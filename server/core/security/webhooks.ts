@@ -1,5 +1,5 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
-import type { RequestHeaders } from '../endpoint';
+import type { RequestHeaders } from '../endpoint.js';
 
 export const headerValue = (headers: RequestHeaders, name: string): string | undefined => {
   const value = headers[name.toLowerCase()];

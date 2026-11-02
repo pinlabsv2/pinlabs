@@ -1,9 +1,9 @@
 import { z } from 'zod';
-import { createEndpoint, AppError } from '../../core/endpoint';
-import { db } from '../../core/db';
-import { evaluateCode, getSettings } from '../lib/server/store';
-import { CURRENCIES, getUsdPrice, markPaid, uniqueCryptoAmount, walletFor } from '../lib/server/crypto';
-import { notifyCustomer } from '../lib/server/notify';
+import { createEndpoint, AppError } from '../../core/endpoint.js';
+import { db } from '../../core/db.js';
+import { evaluateCode, getSettings } from '../lib/server/store.js';
+import { CURRENCIES, getUsdPrice, markPaid, uniqueCryptoAmount, walletFor } from '../lib/server/crypto.js';
+import { notifyCustomer } from '../lib/server/notify.js';
 
 const bad = (m: string) => new AppError({ code: 'BAD_REQUEST', message: m, userFacingMessage: m });
 

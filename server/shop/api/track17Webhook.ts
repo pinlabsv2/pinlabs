@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { createEndpoint } from '../../core/endpoint';
-import { applyTrackInfo } from '../lib/server/tracking';
+import { createEndpoint } from '../../core/endpoint.js';
+import { applyTrackInfo } from '../lib/server/tracking.js';
 
 export default createEndpoint({
   description: 'Receives shipment status updates from 17TRACK and refreshes the order',

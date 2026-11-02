@@ -1,9 +1,9 @@
 import { z } from 'zod';
-import { createEndpoint } from '../../core/endpoint';
-import { db } from '../../core/db';
-import { orderSchema, toOrder } from '../lib/server/orderShape';
-import { refreshStale } from '../lib/server/tracking';
-import { checkOrderPayment } from '../lib/server/crypto';
+import { createEndpoint } from '../../core/endpoint.js';
+import { db } from '../../core/db.js';
+import { orderSchema, toOrder } from '../lib/server/orderShape.js';
+import { refreshStale } from '../lib/server/tracking.js';
+import { checkOrderPayment } from '../lib/server/crypto.js';
 
 export default createEndpoint({
   description: 'Lists orders for the admin table, checking pending crypto payments and refreshing shipments that are due',

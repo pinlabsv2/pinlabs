@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { createEndpoint } from '../../core/endpoint';
-import { db } from '../../core/db';
+import { createEndpoint } from '../../core/endpoint.js';
+import { db } from '../../core/db.js';
 
 const contact = z.object({ id: z.string().optional(), label: z.string(), channel: z.enum(['Telegram', 'WhatsApp', 'Discord', 'Email']), handle: z.string().min(1), sortOrder: z.number() });
 

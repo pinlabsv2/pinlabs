@@ -1,7 +1,7 @@
 import { z } from 'zod';
-import { createEndpoint } from '../../core/endpoint';
-import { db } from '../../core/db';
-import { toOrder } from '../lib/server/orderShape';
+import { createEndpoint } from '../../core/endpoint.js';
+import { db } from '../../core/db.js';
+import { toOrder } from '../lib/server/orderShape.js';
 
 export default createEndpoint({
   description: 'Generates a PDF invoice for an order',

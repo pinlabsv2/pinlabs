@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { createEndpoint } from '../../core/endpoint';
-import { db } from '../../core/db';
+import { createEndpoint } from '../../core/endpoint.js';
+import { db } from '../../core/db.js';
 
 const settingsSchema = z.object({
   storeName: z.string(), solAddress: z.string(), ltcAddress: z.string(),

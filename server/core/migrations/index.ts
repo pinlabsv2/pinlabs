@@ -1,4 +1,4 @@
-import type { QueryRunner, Queryable } from '../pg';
+import type { QueryRunner, Queryable } from '../pg.js';
 
 type Migration = {
   version: string;

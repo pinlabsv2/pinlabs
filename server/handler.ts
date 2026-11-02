@@ -1,8 +1,8 @@
 import { timingSafeEqual } from 'node:crypto';
-import { endpoints } from './registry';
-import { AppError, type Context, type RequestHeaders } from './core/endpoint';
-import { userFromCookie } from './core/auth';
-import { db } from './core/db';
+import { endpoints } from './registry.js';
+import { AppError, type Context, type RequestHeaders } from './core/endpoint.js';
+import { userFromCookie } from './core/auth.js';
+import { db } from './core/db.js';
 
 export type HttpRequest = {
   name: string;

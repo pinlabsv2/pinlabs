@@ -1,7 +1,7 @@
 import { z } from 'zod';
-import { createEndpoint, AppError } from '../endpoint';
-import { db } from '../db';
-import { hashPassword, sessionCookie, toSessionUser } from '../auth';
+import { createEndpoint, AppError } from '../endpoint.js';
+import { db } from '../db.js';
+import { hashPassword, sessionCookie, toSessionUser } from '../auth.js';
 
 export default createEndpoint({
   description: 'Creates an account and signs in. The very first account becomes an admin.',

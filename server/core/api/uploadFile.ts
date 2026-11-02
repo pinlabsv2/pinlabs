@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { createEndpoint } from '../endpoint';
-import { db } from '../db';
+import { createEndpoint } from '../endpoint.js';
+import { db } from '../db.js';
 
 /** Stores a file in the database and returns a permanent URL (/api/file?id=…). Keep files small (Vercel bodies max ~4.5 MB). */
 export default createEndpoint({

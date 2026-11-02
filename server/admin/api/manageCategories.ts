@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { createEndpoint, AppError } from '../../core/endpoint';
-import { db } from '../../core/db';
+import { createEndpoint, AppError } from '../../core/endpoint.js';
+import { db } from '../../core/db.js';
 
 export default createEndpoint({
   description: 'Lists, adds, renames, reorders or removes product categories',

@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { createEndpoint } from '../../core/endpoint';
-import { evaluateCode } from '../lib/server/store';
+import { createEndpoint } from '../../core/endpoint.js';
+import { evaluateCode } from '../lib/server/store.js';
 
 export default createEndpoint({
   description: 'Checks a discount code against a cart subtotal',

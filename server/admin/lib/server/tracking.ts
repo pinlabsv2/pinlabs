@@ -1,6 +1,6 @@
-import { db } from '../../../core/db';
-import type { OrdersRecordType } from '../../../core/db';
-import { notifyCustomer } from './notify';
+import { db } from '../../../core/db.js';
+import type { OrdersRecordType } from '../../../core/db.js';
+import { notifyCustomer } from './notify.js';
 
 const API = 'https://api.17track.net/track/v2.2';
 export const ACTIVE_SHIPPING = ['Shipped', 'In Transit', 'Out for Delivery', 'Exception'];

@@ -1,4 +1,4 @@
-import { ProviderError, type BroadcastInput, type BroadcastSnapshot, type EmailMessage, type EmailProvider, type EmailResult } from './types';
+import { ProviderError, type BroadcastInput, type BroadcastSnapshot, type EmailMessage, type EmailProvider, type EmailResult } from './types.js';
 
 const asObject = (value: unknown): Record<string, unknown> => value && typeof value === 'object' ? value as Record<string, unknown> : {};
 const requestJson = async (url: string, init: RequestInit): Promise<Record<string, unknown>> => {

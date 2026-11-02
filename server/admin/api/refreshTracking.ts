@@ -1,7 +1,7 @@
 import { z } from 'zod';
-import { createEndpoint } from '../../core/endpoint';
-import { db } from '../../core/db';
-import { refreshTracking } from '../lib/server/tracking';
+import { createEndpoint } from '../../core/endpoint.js';
+import { db } from '../../core/db.js';
+import { refreshTracking } from '../lib/server/tracking.js';
 
 export default createEndpoint({
   description: 'Daily shipment check: pulls latest 17TRACK status for all active shipments and updates orders that moved',

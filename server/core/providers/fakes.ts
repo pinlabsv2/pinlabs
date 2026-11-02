@@ -1,4 +1,4 @@
-import type { BroadcastInput, BroadcastSnapshot, CreatePaymentInput, CreatePayoutInput, EmailMessage, EmailProvider, EmailResult, PaymentProvider, PaymentSnapshot, PaymentState, PayoutDestination, PayoutProvider, PayoutQuote, PayoutQuoteInput, PayoutSnapshot, PayoutState, ReviewImageStorage, StoredObject, TrackingProvider, TrackingSnapshot } from './types';
+import type { BroadcastInput, BroadcastSnapshot, CreatePaymentInput, CreatePayoutInput, EmailMessage, EmailProvider, EmailResult, PaymentProvider, PaymentSnapshot, PaymentState, PayoutDestination, PayoutProvider, PayoutQuote, PayoutQuoteInput, PayoutSnapshot, PayoutState, ReviewImageStorage, StoredObject, TrackingProvider, TrackingSnapshot } from './types.js';
 
 const clone = <T>(value: T): T => structuredClone(value);
 

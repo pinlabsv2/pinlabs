@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { createEndpoint } from '../../core/endpoint';
-import { db } from '../../core/db';
+import { createEndpoint } from '../../core/endpoint.js';
+import { db } from '../../core/db.js';
 
 const productSchema = z.object({
   id: z.string().optional(),

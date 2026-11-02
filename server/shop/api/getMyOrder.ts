@@ -1,9 +1,9 @@
 import { z } from 'zod';
-import { createEndpoint, AppError } from '../../core/endpoint';
-import { db } from '../../core/db';
-import { orderSchema, toOrder } from '../lib/server/orderShape';
-import { checkOrderPayment } from '../lib/server/crypto';
-import { refreshStale } from '../lib/server/tracking';
+import { createEndpoint, AppError } from '../../core/endpoint.js';
+import { db } from '../../core/db.js';
+import { orderSchema, toOrder } from '../lib/server/orderShape.js';
+import { checkOrderPayment } from '../lib/server/crypto.js';
+import { refreshStale } from '../lib/server/tracking.js';
 
 export default createEndpoint({
   description: "Gets one of the signed-in customer's orders, checking payment and refreshing tracking when needed",

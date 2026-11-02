@@ -1,9 +1,9 @@
 import { z } from 'zod';
-import { createEndpoint, AppError } from '../../core/endpoint';
-import { db } from '../../core/db';
-import { orderSchema, toOrder } from '../lib/server/orderShape';
-import { registerTracking, refreshTracking } from '../lib/server/tracking';
-import { notifyCustomer } from '../lib/server/notify';
+import { createEndpoint, AppError } from '../../core/endpoint.js';
+import { db } from '../../core/db.js';
+import { orderSchema, toOrder } from '../lib/server/orderShape.js';
+import { registerTracking, refreshTracking } from '../lib/server/tracking.js';
+import { notifyCustomer } from '../lib/server/notify.js';
 
 const bad = (m: string) => new AppError({ code: 'BAD_REQUEST', message: m, userFacingMessage: m });
 

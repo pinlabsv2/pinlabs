@@ -1,4 +1,4 @@
-import { ProviderError, type TrackingProvider, type TrackingSnapshot } from './types';
+import { ProviderError, type TrackingProvider, type TrackingSnapshot } from './types.js';
 
 const asObject = (value: unknown): Record<string, unknown> => value && typeof value === 'object' ? value as Record<string, unknown> : {};
 

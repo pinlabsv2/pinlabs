@@ -65,7 +65,7 @@ async function connect(options: DatabaseOptions = {}): Promise<Queryable> {
 export async function createDatabase(options: DatabaseOptions = {}): Promise<Queryable> {
   const database = await connect(options);
   if (options.migrate !== false) {
-    const { migrate } = await import('./schema');
+    const { migrate } = await import('./schema.js');
     await migrate(database);
   }
   return database;

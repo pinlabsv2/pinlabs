@@ -1,7 +1,7 @@
 import { z } from 'zod';
-import { createEndpoint, AppError } from '../endpoint';
-import { db } from '../db';
-import { checkPassword, sessionCookie, toSessionUser } from '../auth';
+import { createEndpoint, AppError } from '../endpoint.js';
+import { db } from '../db.js';
+import { checkPassword, sessionCookie, toSessionUser } from '../auth.js';
 
 export default createEndpoint({
   description: 'Signs in with email + password',

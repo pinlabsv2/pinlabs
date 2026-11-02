@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { createEndpoint } from '../../core/endpoint';
-import { testWallets } from '../lib/server/crypto';
+import { createEndpoint } from '../../core/endpoint.js';
+import { testWallets } from '../lib/server/crypto.js';
 
 export default createEndpoint({
   description: 'Checks that each configured payment wallet can be watched through its blockchain API',

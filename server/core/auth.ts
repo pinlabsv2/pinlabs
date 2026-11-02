@@ -1,7 +1,7 @@
 import { SignJWT, jwtVerify } from 'jose';
 import bcrypt from 'bcryptjs';
-import { db } from './db';
-import type { SessionUser } from './endpoint';
+import { db } from './db.js';
+import type { SessionUser } from './endpoint.js';
 
 const COOKIE = 'pl_session';
 const MAX_AGE = 60 * 60 * 24 * 30;
