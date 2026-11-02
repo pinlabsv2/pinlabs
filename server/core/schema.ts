@@ -1,8 +1,6 @@
-import { createRequire } from 'node:module';
 import type { Queryable } from './pg.js';
 import { runMigrations } from './migrations/index.js';
-
-const seed = createRequire(import.meta.url)('./seed.json') as Record<string, Record<string, unknown>[]>;
+import seed from './seed.js';
 
 type Col = 'text' | 'double precision' | 'boolean' | 'timestamptz' | 'integer' | 'bigint' | 'numeric' | 'jsonb';
 
