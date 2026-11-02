@@ -2,7 +2,7 @@ import { db } from '../../../core/db.js';
 import type { OrdersRecordType } from '../../../core/db.js';
 import { notifyCustomer } from './notify.js';
 
-const API = 'https://api.17track.net/track/v2.2';
+const API = (process.env.TRACK17_API_BASE_URL || 'https://api.17track.net/track/v2.4').replace(/\/$/, '');
 export const ACTIVE_SHIPPING = ['Shipped', 'In Transit', 'Out for Delivery', 'Exception'];
 const LOCKED = ['Cancelled', 'Refunded', 'Delivered'];
 

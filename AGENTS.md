@@ -158,7 +158,7 @@ db.sql({ query: 'SELECT … FROM "Orders" WHERE "status" = $1', params: ['Shippe
    - Customers have **no** manual "check now" button, which prevents abuse.
 3. **Payment UI** (`src/shop/components/PaymentPanel.tsx` and `PaymentQr.tsx`): a QR code with an "amount URI" or "address only" toggle, a countdown, and copyable amount and address. QR images come from `api.qrserver.com`; swap in the `qrcode` npm package to self-host.
 4. **Shipping** (`*/lib/server/tracking.ts`)
-   - The admin clicks "Mark shipped" and enters a tracking number. It is registered with 17TRACK (`https://api.17track.net/track/v2.2`, header `17token`).
+   - The admin clicks "Mark shipped" and enters a tracking number. It is registered with 17TRACK (`https://api.17track.net/track/v2.4`, header `17token`).
    - Status refreshes when an order is read and was last checked more than 10 minutes ago. The webhook also pushes updates.
    - 17TRACK statuses map to order statuses, and **all orders sharing the tracking number** are updated.
    - `Delivered`, `Cancelled` and `Refunded` are locked.

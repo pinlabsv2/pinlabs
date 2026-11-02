@@ -7,7 +7,7 @@ export class Track17Provider implements TrackingProvider {
   private readonly apiKey: string;
 
   constructor(env: NodeJS.ProcessEnv = process.env) {
-    this.baseUrl = (env.TRACK17_API_BASE_URL || 'https://api.17track.net/track/v2.2').replace(/\/$/, '');
+    this.baseUrl = (env.TRACK17_API_BASE_URL || 'https://api.17track.net/track/v2.4').replace(/\/$/, '');
     this.apiKey = env.TRACK17_API_KEY || '';
   }
 

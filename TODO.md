@@ -78,13 +78,12 @@ NOWPayments refunds are merchant-funded payouts, not reversals or shipping insur
 
 ## Priority 4 — transactional email and campaigns
 
-- [ ] Verify the native Resend/Svix implementation against current official webhook and API contracts.
+- [ ] Verify the native Resend API implementation against the current official contract.
 - [ ] Seed editable transactional templates for order, payment, split shipment, delivery/loss, preorder, refund, and review events.
 - [ ] Escape template variables and sanitize admin-authored HTML.
 - [ ] Insert permanent-idempotency email outbox rows in the same transaction as each business event.
 - [ ] Add leased, bounded retries and explicit uncertain-send handling.
-- [ ] Add a raw-body Resend webhook endpoint with timestamp/signature validation and event deduplication.
-- [ ] Track delivery, bounce, complaint, and suppression outcomes.
+- [ ] Optionally add signed Resend delivery-event webhooks later if delivery, bounce, and complaint tracking is needed.
 - [ ] Add template editing, variable documentation, fixture preview, version history, audit history, and restricted test sends.
 - [ ] Add marketing contacts, signed unsubscribe links, RFC 8058 one-click unsubscribe, and immediate local suppression.
 - [ ] Treat bounce/complaint suppression globally while allowing necessary transactional email after marketing opt-out.
@@ -94,9 +93,8 @@ NOWPayments refunds are merchant-funded payouts, not reversals or shipping insur
 Required production configuration:
 
 - `RESEND_API_KEY`
-- `RESEND_WEBHOOK_SECRET`
-- `RESEND_FROM_EMAIL`
-- optional `RESEND_REPLY_TO_EMAIL`
+- `EMAIL_FROM`
+- optional `EMAIL_REPLY_TO`
 
 ## Priority 5 — forecasting and admin expansion
 
