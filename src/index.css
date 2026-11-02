@@ -1,0 +1,115 @@
+@import url("https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=IBM+Plex+Mono:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* R-Phase — light "Paper / Ink" system. Styrene A → DM Sans, ABC Diatype Mono → IBM Plex Mono (closest free substitutes). */
+@layer base {
+  :root {
+    --background: 48 43% 98%;      /* paper #FBFAF6 */
+    --foreground: 60 6% 7%;        /* ink #131311 */
+
+    --card: 48 43% 98%;
+    --card-foreground: 60 6% 7%;
+    --popover: 48 43% 98%;
+    --popover-foreground: 60 6% 7%;
+
+    --primary: 60 6% 7%;
+    --primary-foreground: 48 43% 98%;
+
+    --secondary: 45 20% 92%;       /* ece9e2 paper-2 */
+    --secondary-foreground: 60 6% 7%;
+
+    --muted: 45 20% 93%;
+    --muted-foreground: 40 4% 40%; /* grey */
+
+    --accent: 45 20% 92%;
+    --accent-foreground: 60 6% 7%;
+
+    --destructive: 0 65% 42%;
+    --destructive-foreground: 48 43% 98%;
+
+    --border: 45 8% 84%;           /* hairline */
+    --input: 45 8% 80%;
+    --ring: 60 6% 7%;
+
+    --grey: 40 4% 40%;
+    --grey-2: 40 4% 58%;
+
+    --chart-1: 60 6% 7%;
+    --chart-2: 40 4% 45%;
+    --chart-3: 40 4% 65%;
+    --chart-4: 25 55% 45%;
+    --chart-5: 150 25% 38%;
+
+    --sidebar-background: 48 43% 98%;
+    --sidebar-foreground: 60 6% 7%;
+    --sidebar-primary: 60 6% 7%;
+    --sidebar-primary-foreground: 48 43% 98%;
+    --sidebar-accent: 45 20% 92%;
+    --sidebar-accent-foreground: 60 6% 7%;
+    --sidebar-border: 45 8% 84%;
+    --sidebar-ring: 60 6% 7%;
+
+    --radius: 0px;
+
+    --font-sans: 'DM Sans', ui-sans-serif, system-ui, sans-serif;
+    --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+    --font-serif: 'Instrument Serif', Georgia, serif;
+
+    --shadow-x: 0px;
+    --shadow-y: 0px;
+    --shadow-blur: 0px;
+    --shadow-spread: 0px;
+    --shadow-opacity: 0;
+    --shadow-color: #000000;
+    --shadow-rgb: 0 0 0;
+    --shadow-2xs: none;
+    --shadow-xs: none;
+    --shadow-sm: none;
+    --shadow: none;
+    --shadow-md: none;
+    --shadow-lg: none;
+    --shadow-xl: none;
+    --shadow-2xl: none;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    @apply lowercase tracking-tight;
+  }
+}
+
+@layer utilities {
+  .bg-paper { background-color: hsl(var(--background)); }
+  .text-ink { color: hsl(var(--foreground)); }
+  .bg-ink { background-color: hsl(var(--foreground)); }
+  .text-grey { color: hsl(var(--grey)); }
+  .text-grey-2 { color: hsl(var(--grey-2)); }
+  .border-hairline { border-color: hsl(var(--border)); }
+  /* Technical spec: lot numbers, SKUs, tags */
+  .text-spec {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+  /* Emphasized lead-in titles */
+  .text-lead {
+    font-family: var(--font-serif);
+    font-style: italic;
+    text-transform: none;
+    letter-spacing: 0;
+  }
+  .container-rphase {
+    @apply mx-auto w-full max-w-[1400px] px-6 md:px-8 lg:px-10;
+  }
+}
