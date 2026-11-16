@@ -6,11 +6,14 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from '@/ui-kit/ui/dropdown-menu';
 import { useCart } from '../lib/cart';
+import { useStorefront } from '../lib/store';
 import PromoBanner from './PromoBanner';
 
 export default function Header() {
   const { user } = useAuth();
   const { count } = useCart();
+  const { data: storefront } = useStorefront();
+  const storeName = storefront?.storeName || 'PinLabs';
   return (
     <header className="sticky top-0 z-40 bg-background/85 backdrop-blur border-b">
       <PromoBanner />
@@ -19,7 +22,7 @@ export default function Header() {
           <span className="grid place-items-center size-8 rounded-lg bg-primary text-primary-foreground">
             <FlaskConical className="size-4" />
           </span>
-          pinlabs
+          {storeName}
         </Link>
         <nav className="hidden sm:flex gap-5 text-sm text-muted-foreground">
           <NavLink to="/" end className={({ isActive }) => (isActive ? 'text-foreground font-medium' : 'hover:text-foreground')}>Shop</NavLink>

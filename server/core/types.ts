@@ -54,6 +54,10 @@ export type ProductsRecordType = {
   preorderEnabled?: boolean;
   preorderCapSellableUnits?: number;
   preorderExpectedShipAt?: string;
+  hasVariants?: boolean;
+  shippingScope?: 'product' | 'variant' | string;
+  shippingOptionId?: string;
+  subcategoryDividerId?: string;
 };
 
 /** What you may write when creating or updating a record in the "Products" table. */
@@ -82,7 +86,23 @@ export type ProductsRecordInput = {
   preorderEnabled: string | boolean | null;
   preorderCapSellableUnits: string | number | null;
   preorderExpectedShipAt: string | Date | null;
+  hasVariants: string | boolean | null;
+  shippingScope: 'product' | 'variant' | string | null;
+  shippingOptionId: string | null;
+  subcategoryDividerId: string | null;
 };
+
+export type ShippingOptionsRecordType = BaseRecord & { name?: string; price?: number };
+export type ShippingOptionsRecordInput = RecordInput<ShippingOptionsRecordType>;
+
+export type ProductVariantsRecordType = BaseRecord & {
+  productId?: string; name?: string; price?: number; salePrice?: number; stock?: number; shippingOptionId?: string;
+  active?: boolean; sortOrder?: number;
+};
+export type ProductVariantsRecordInput = RecordInput<ProductVariantsRecordType>;
+
+export type SubcategoryDividersRecordType = BaseRecord & { categoryId?: string; name?: string; sortOrder?: number };
+export type SubcategoryDividersRecordInput = RecordInput<SubcategoryDividersRecordType>;
 
 /** A record in the "Discount Codes" table, as it is read back. */
 export type DiscountCodesRecordType = {
@@ -233,6 +253,7 @@ export type OrdersRecordType = {
   cancelledAt?: string;
   closedAt?: string;
   migrationVersion?: number;
+  shippingBreakdownJson?: JsonValue;
 };
 
 /** What you may write when creating or updating a record in the "Orders" table. */
@@ -275,6 +296,7 @@ export type OrdersRecordInput = {
   cancelledAt: string | Date | null;
   closedAt: string | Date | null;
   migrationVersion: string | number | null;
+  shippingBreakdownJson: JsonValue | null;
 };
 
 /** A record in the "Categories" table, as it is read back. */
@@ -352,7 +374,8 @@ export type JsonValue = Record<string, unknown> | unknown[];
 export type IntegerValue = number | string;
 
 export type OrderItemsRecordType = BaseRecord & {
-  orderId?: string; lineNumber?: number; productId?: string; productName?: string; productSize?: string;
+  orderId?: string; lineNumber?: number; productId?: string; productName?: string; productSize?: string; variantId?: string; variantName?: string;
+  shippingOptionId?: string; shippingOptionName?: string; shippingOptionPriceCents?: IntegerValue;
   unitPriceCents?: IntegerValue; quantity?: number; lineSubtotalCents?: IntegerValue; discountCents?: IntegerValue; shippingCents?: IntegerValue;
 };
 export type OrderItemsRecordInput = RecordInput<OrderItemsRecordType>;
@@ -434,27 +457,33 @@ export type RefundPayoutsRecordType = BaseRecord & {
 export type RefundPayoutsRecordInput = RecordInput<RefundPayoutsRecordType>;
 
 export type EmailTemplatesRecordType = BaseRecord & {
-  templateKey?: string; name?: string; kind?: string; subject?: string; html?: string; text?: string; variablesJson?: JsonValue;
-  version?: number; enabled?: boolean; updatedBy?: string;
+  templateKey?: string; name?: string; kind?: string; mode?: string; subject?: string; preheader?: string; heading?: string; bodyText?: string;
+  ctaLabel?: string; ctaUrlTemplate?: string; advancedHtml?: string; advancedText?: string; html?: string; text?: string;
+  variablesJson?: JsonValue; allowedVariablesJson?: JsonValue; version?: number; enabled?: boolean; updatedBy?: string;
 };
 export type EmailTemplatesRecordInput = RecordInput<EmailTemplatesRecordType>;
 
 export type EmailOutboxRecordType = BaseRecord & {
-  recipient?: string; templateKey?: string; templateVersion?: number; payloadJson?: JsonValue; kind?: string; idempotencyKey?: string;
-  state?: string; leaseOwner?: string; leaseExpiresAt?: string; attemptCount?: number; nextAttemptAt?: string; providerMessageId?: string;
-  campaignId?: string; error?: string; sentAt?: string; deliveredAt?: string;
+  recipient?: string; templateKey?: string; templateVersion?: number; payloadJson?: JsonValue; kind?: string; purpose?: string;
+  idempotencyKey?: string; state?: string; subjectSnapshot?: string; htmlSnapshot?: string; textSnapshot?: string;
+  fromNameSnapshot?: string; fromAddressSnapshot?: string; replyToSnapshot?: string; headersJson?: JsonValue; orderId?: string;
+  campaignId?: string; campaignRecipientId?: string; leaseOwner?: string; leaseExpiresAt?: string; attemptCount?: number;
+  maxAttempts?: number; nextAttemptAt?: string; lastAttemptAt?: string; providerMessageId?: string; providerResponseJson?: JsonValue;
+  error?: string; cancelReason?: string; cancelledAt?: string; failedAt?: string; sentAt?: string; deliveredAt?: string;
 };
 export type EmailOutboxRecordInput = RecordInput<EmailOutboxRecordType>;
 
 export type EmailEventsRecordType = BaseRecord & {
-  provider?: string; providerEventId?: string; outboxId?: string; providerMessageId?: string; campaignId?: string; eventType?: string;
-  eventAt?: string; metadataJson?: JsonValue;
+  provider?: string; providerEventId?: string; outboxId?: string; providerMessageId?: string; campaignId?: string; email?: string;
+  eventType?: string; eventCategory?: string; eventAt?: string; rawDigest?: string; processedAt?: string; processingError?: string;
+  metadataJson?: JsonValue;
 };
 export type EmailEventsRecordInput = RecordInput<EmailEventsRecordType>;
 
 export type MarketingContactsRecordType = BaseRecord & {
-  email?: string; userId?: string; state?: string; consentSource?: string; consentAt?: string; unsubscribedAt?: string;
-  unsubscribeReason?: string; providerContactId?: string; syncState?: string;
+  email?: string; userId?: string; state?: string; consentSource?: string; consentAt?: string; lastEligibleAt?: string;
+  unsubscribedAt?: string; unsubscribeReason?: string; suppressedAt?: string; suppressionReason?: string;
+  providerContactId?: string; syncState?: string; metadataJson?: JsonValue;
 };
 export type MarketingContactsRecordInput = RecordInput<MarketingContactsRecordType>;
 
@@ -462,14 +491,20 @@ export type CustomerSegmentsRecordType = BaseRecord & { name?: string; definitio
 export type CustomerSegmentsRecordInput = RecordInput<CustomerSegmentsRecordType>;
 
 export type CampaignsRecordType = BaseRecord & {
-  name?: string; subject?: string; html?: string; text?: string; templateSnapshotJson?: JsonValue; audienceDefinitionJson?: JsonValue;
-  scheduledAt?: string; state?: string; resendBroadcastId?: string; providerSegmentId?: string; approvedBy?: string; approvedAt?: string; sentAt?: string;
+  name?: string; subject?: string; mode?: string; preheader?: string; heading?: string; bodyText?: string; ctaLabel?: string; ctaUrl?: string;
+  advancedHtml?: string; advancedText?: string; html?: string; text?: string; revision?: number; audienceType?: string;
+  templateSnapshotJson?: JsonValue; audienceDefinitionJson?: JsonValue; recipientCount?: number; eligibleRecipientCount?: number;
+  scheduledAt?: string; state?: string; testSentAt?: string; testRecipient?: string; testOutboxId?: string; testRevision?: number;
+  confirmationNonceHash?: string; confirmationExpiresAt?: string; confirmedBy?: string; confirmedAt?: string; queuedAt?: string;
+  completedAt?: string; failedCount?: number; suppressedCount?: number; resendBroadcastId?: string; providerSegmentId?: string;
+  approvedBy?: string; approvedAt?: string; sentAt?: string;
 };
 export type CampaignsRecordInput = RecordInput<CampaignsRecordType>;
 
 export type CampaignRecipientsRecordType = BaseRecord & {
-  campaignId?: string; contactId?: string; customerId?: string; email?: string; eligibilitySnapshotJson?: JsonValue; state?: string;
-  providerMessageId?: string;
+  campaignId?: string; contactId?: string; customerId?: string; email?: string; roleSnapshot?: string;
+  eligibilitySnapshotJson?: JsonValue; templateSnapshotJson?: JsonValue; state?: string; outboxId?: string;
+  providerMessageId?: string; suppressionReason?: string; queuedAt?: string; sentAt?: string; suppressedAt?: string; failedAt?: string;
 };
 export type CampaignRecipientsRecordInput = RecordInput<CampaignRecipientsRecordType>;
 

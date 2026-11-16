@@ -46,6 +46,9 @@ export const myAccount = (input: MyAccountInputType) => call('myAccount', input)
 export type Track17WebhookInputType = In<'track17Webhook'>;
 export type Track17WebhookOutputType = Out<'track17Webhook'>;
 export const track17Webhook = (input: Track17WebhookInputType) => call('track17Webhook', input);
+export type UnsubscribeMarketingInputType = In<'unsubscribeMarketing'>;
+export type UnsubscribeMarketingOutputType = Out<'unsubscribeMarketing'>;
+export const unsubscribeMarketing = (input: UnsubscribeMarketingInputType) => call('unsubscribeMarketing', input);
 export type ValidateDiscountInputType = In<'validateDiscount'>;
 export type ValidateDiscountOutputType = Out<'validateDiscount'>;
 export const validateDiscount = (input: ValidateDiscountInputType) => call('validateDiscount', input);
@@ -58,9 +61,15 @@ export const getDashboard = (input: GetDashboardInputType) => call('getDashboard
 export type ListOrdersInputType = In<'listOrders'>;
 export type ListOrdersOutputType = Out<'listOrders'>;
 export const listOrders = (input: ListOrdersInputType) => call('listOrders', input);
+export type ManageCampaignsInputType = In<'manageCampaigns'>;
+export type ManageCampaignsOutputType = Out<'manageCampaigns'>;
+export const manageCampaigns = (input: ManageCampaignsInputType) => call('manageCampaigns', input);
 export type ManageCategoriesInputType = In<'manageCategories'>;
 export type ManageCategoriesOutputType = Out<'manageCategories'>;
 export const manageCategories = (input: ManageCategoriesInputType) => call('manageCategories', input);
+export type ManageEmailTemplatesInputType = In<'manageEmailTemplates'>;
+export type ManageEmailTemplatesOutputType = Out<'manageEmailTemplates'>;
+export const manageEmailTemplates = (input: ManageEmailTemplatesInputType) => call('manageEmailTemplates', input);
 export type ManageCodesInputType = In<'manageCodes'>;
 export type ManageCodesOutputType = Out<'manageCodes'>;
 export const manageCodes = (input: ManageCodesInputType) => call('manageCodes', input);
@@ -70,6 +79,9 @@ export const manageProducts = (input: ManageProductsInputType) => call('managePr
 export type ManageSettingsInputType = In<'manageSettings'>;
 export type ManageSettingsOutputType = Out<'manageSettings'>;
 export const manageSettings = (input: ManageSettingsInputType) => call('manageSettings', input);
+export type ManageShippingOptionsInputType = In<'manageShippingOptions'>;
+export type ManageShippingOptionsOutputType = Out<'manageShippingOptions'>;
+export const manageShippingOptions = (input: ManageShippingOptionsInputType) => call('manageShippingOptions', input);
 export type ManageSupportInputType = In<'manageSupport'>;
 export type ManageSupportOutputType = Out<'manageSupport'>;
 export const manageSupport = (input: ManageSupportInputType) => call('manageSupport', input);

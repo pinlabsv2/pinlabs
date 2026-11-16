@@ -248,7 +248,322 @@ const backfill: Migration = {
   },
 };
 
-const migrations: Migration[] = [constraints, backfill];
+const catalogShipping: Migration = {
+  version: '003-catalog-variants-shipping-dividers',
+  up: async (tx) => {
+    await runAll(tx, [
+      `CREATE TABLE IF NOT EXISTS "ShippingOptions" (
+        "id" text PRIMARY KEY, "createdAt" timestamptz NOT NULL DEFAULT now(), "updatedAt" timestamptz NOT NULL DEFAULT now(),
+        "name" text, "price" double precision
+      )`,
+      `CREATE TABLE IF NOT EXISTS "ProductVariants" (
+        "id" text PRIMARY KEY, "createdAt" timestamptz NOT NULL DEFAULT now(), "updatedAt" timestamptz NOT NULL DEFAULT now(),
+        "productId" text, "name" text, "price" double precision, "salePrice" double precision, "stock" integer,
+        "shippingOptionId" text, "active" boolean, "sortOrder" integer
+      )`,
+      `CREATE TABLE IF NOT EXISTS "SubcategoryDividers" (
+        "id" text PRIMARY KEY, "createdAt" timestamptz NOT NULL DEFAULT now(), "updatedAt" timestamptz NOT NULL DEFAULT now(),
+        "categoryId" text, "name" text, "sortOrder" integer
+      )`,
+      `ALTER TABLE "Products" ADD COLUMN IF NOT EXISTS "hasVariants" boolean`,
+      `ALTER TABLE "Products" ADD COLUMN IF NOT EXISTS "shippingScope" text`,
+      `ALTER TABLE "Products" ADD COLUMN IF NOT EXISTS "shippingOptionId" text`,
+      `ALTER TABLE "Products" ADD COLUMN IF NOT EXISTS "subcategoryDividerId" text`,
+      `ALTER TABLE "Orders" ADD COLUMN IF NOT EXISTS "shippingBreakdownJson" jsonb`,
+      `ALTER TABLE "OrderItems" ADD COLUMN IF NOT EXISTS "variantId" text`,
+      `ALTER TABLE "OrderItems" ADD COLUMN IF NOT EXISTS "variantName" text`,
+      `ALTER TABLE "OrderItems" ADD COLUMN IF NOT EXISTS "shippingOptionId" text`,
+      `ALTER TABLE "OrderItems" ADD COLUMN IF NOT EXISTS "shippingOptionName" text`,
+      `ALTER TABLE "OrderItems" ADD COLUMN IF NOT EXISTS "shippingOptionPriceCents" bigint`,
+      `UPDATE "Products" SET "hasVariants" = false WHERE "hasVariants" IS NULL`,
+      `UPDATE "Products" SET "shippingScope" = 'product' WHERE "shippingScope" IS NULL`,
+      `ALTER TABLE "Products" ALTER COLUMN "hasVariants" SET DEFAULT false`,
+      `ALTER TABLE "Products" ALTER COLUMN "shippingScope" SET DEFAULT 'product'`,
+      `ALTER TABLE "ProductVariants" ALTER COLUMN "active" SET DEFAULT true`,
+      `ALTER TABLE "ProductVariants" ALTER COLUMN "sortOrder" SET DEFAULT 0`,
+      `ALTER TABLE "SubcategoryDividers" ALTER COLUMN "sortOrder" SET DEFAULT 0`,
+      `ALTER TABLE "ProductVariants" ADD CONSTRAINT product_variants_product_fk FOREIGN KEY ("productId") REFERENCES "Products"("id") ON DELETE CASCADE`,
+      `ALTER TABLE "ProductVariants" ADD CONSTRAINT product_variants_shipping_fk FOREIGN KEY ("shippingOptionId") REFERENCES "ShippingOptions"("id") ON DELETE RESTRICT`,
+      `ALTER TABLE "SubcategoryDividers" ADD CONSTRAINT subcategory_dividers_category_fk FOREIGN KEY ("categoryId") REFERENCES "Categories"("id") ON DELETE RESTRICT`,
+      `ALTER TABLE "Products" ADD CONSTRAINT products_shipping_option_fk FOREIGN KEY ("shippingOptionId") REFERENCES "ShippingOptions"("id") ON DELETE RESTRICT`,
+      `ALTER TABLE "Products" ADD CONSTRAINT products_subcategory_divider_fk FOREIGN KEY ("subcategoryDividerId") REFERENCES "SubcategoryDividers"("id") ON DELETE SET NULL`,
+      `ALTER TABLE "Products" ADD CONSTRAINT products_shipping_scope_check CHECK ("shippingScope" IN ('product', 'variant'))`,
+      `ALTER TABLE "ShippingOptions" ADD CONSTRAINT shipping_options_values_check CHECK ("name" IS NOT NULL AND length(trim("name")) > 0 AND "price" IS NOT NULL AND "price" >= 0)`,
+      `ALTER TABLE "ProductVariants" ADD CONSTRAINT product_variants_values_check CHECK (
+        "productId" IS NOT NULL AND "name" IS NOT NULL AND length(trim("name")) > 0
+        AND "price" IS NOT NULL AND "price" >= 0
+        AND ("salePrice" IS NULL OR ("salePrice" >= 0 AND "salePrice" < "price"))
+        AND ("stock" IS NULL OR "stock" >= 0) AND COALESCE("sortOrder", 0) >= 0
+      )`,
+      `ALTER TABLE "SubcategoryDividers" ADD CONSTRAINT subcategory_dividers_values_check CHECK (
+        "categoryId" IS NOT NULL AND "name" IS NOT NULL AND length(trim("name")) > 0 AND COALESCE("sortOrder", 0) >= 0
+      )`,
+      `ALTER TABLE "OrderItems" ADD CONSTRAINT order_items_shipping_snapshot_check CHECK (
+        "shippingOptionPriceCents" IS NULL OR "shippingOptionPriceCents" >= 0
+      )`,
+      `CREATE UNIQUE INDEX IF NOT EXISTS shipping_options_name_idx ON "ShippingOptions" (lower("name"))`,
+      `CREATE INDEX IF NOT EXISTS product_variants_product_order_idx ON "ProductVariants" ("productId", "sortOrder", "createdAt")`,
+      `CREATE INDEX IF NOT EXISTS product_variants_shipping_idx ON "ProductVariants" ("shippingOptionId")`,
+      `CREATE UNIQUE INDEX IF NOT EXISTS subcategory_dividers_category_name_idx ON "SubcategoryDividers" ("categoryId", lower("name"))`,
+      `CREATE INDEX IF NOT EXISTS subcategory_dividers_category_order_idx ON "SubcategoryDividers" ("categoryId", "sortOrder", "createdAt")`,
+      `CREATE INDEX IF NOT EXISTS products_shipping_option_idx ON "Products" ("shippingOptionId")`,
+      `CREATE INDEX IF NOT EXISTS products_subcategory_divider_idx ON "Products" ("subcategoryDividerId")`,
+      `CREATE INDEX IF NOT EXISTS order_items_variant_idx ON "OrderItems" ("variantId")`,
+      `CREATE INDEX IF NOT EXISTS order_items_shipping_option_idx ON "OrderItems" ("shippingOptionId")`,
+    ]);
+  },
+};
+
+const emailMarketing: Migration = {
+  version: '004-email-marketing-outbox',
+  up: async (tx) => {
+    await runAll(tx, [
+      `CREATE TABLE IF NOT EXISTS "EmailTemplates" ("id" text PRIMARY KEY, "createdAt" timestamptz NOT NULL DEFAULT now(), "updatedAt" timestamptz NOT NULL DEFAULT now())`,
+      `CREATE TABLE IF NOT EXISTS "EmailOutbox" ("id" text PRIMARY KEY, "createdAt" timestamptz NOT NULL DEFAULT now(), "updatedAt" timestamptz NOT NULL DEFAULT now())`,
+      `CREATE TABLE IF NOT EXISTS "EmailEvents" ("id" text PRIMARY KEY, "createdAt" timestamptz NOT NULL DEFAULT now(), "updatedAt" timestamptz NOT NULL DEFAULT now())`,
+      `CREATE TABLE IF NOT EXISTS "MarketingContacts" ("id" text PRIMARY KEY, "createdAt" timestamptz NOT NULL DEFAULT now(), "updatedAt" timestamptz NOT NULL DEFAULT now())`,
+      `CREATE TABLE IF NOT EXISTS "Campaigns" ("id" text PRIMARY KEY, "createdAt" timestamptz NOT NULL DEFAULT now(), "updatedAt" timestamptz NOT NULL DEFAULT now())`,
+      `CREATE TABLE IF NOT EXISTS "CampaignRecipients" ("id" text PRIMARY KEY, "createdAt" timestamptz NOT NULL DEFAULT now(), "updatedAt" timestamptz NOT NULL DEFAULT now())`,
+
+      `ALTER TABLE "EmailTemplates" ADD COLUMN IF NOT EXISTS "templateKey" text`,
+      `ALTER TABLE "EmailTemplates" ADD COLUMN IF NOT EXISTS "name" text`,
+      `ALTER TABLE "EmailTemplates" ADD COLUMN IF NOT EXISTS "kind" text`,
+      `ALTER TABLE "EmailTemplates" ADD COLUMN IF NOT EXISTS "mode" text`,
+      `ALTER TABLE "EmailTemplates" ADD COLUMN IF NOT EXISTS "subject" text`,
+      `ALTER TABLE "EmailTemplates" ADD COLUMN IF NOT EXISTS "preheader" text`,
+      `ALTER TABLE "EmailTemplates" ADD COLUMN IF NOT EXISTS "heading" text`,
+      `ALTER TABLE "EmailTemplates" ADD COLUMN IF NOT EXISTS "bodyText" text`,
+      `ALTER TABLE "EmailTemplates" ADD COLUMN IF NOT EXISTS "ctaLabel" text`,
+      `ALTER TABLE "EmailTemplates" ADD COLUMN IF NOT EXISTS "ctaUrlTemplate" text`,
+      `ALTER TABLE "EmailTemplates" ADD COLUMN IF NOT EXISTS "advancedHtml" text`,
+      `ALTER TABLE "EmailTemplates" ADD COLUMN IF NOT EXISTS "advancedText" text`,
+      `ALTER TABLE "EmailTemplates" ADD COLUMN IF NOT EXISTS "html" text`,
+      `ALTER TABLE "EmailTemplates" ADD COLUMN IF NOT EXISTS "text" text`,
+      `ALTER TABLE "EmailTemplates" ADD COLUMN IF NOT EXISTS "variablesJson" jsonb`,
+      `ALTER TABLE "EmailTemplates" ADD COLUMN IF NOT EXISTS "allowedVariablesJson" jsonb`,
+      `ALTER TABLE "EmailTemplates" ADD COLUMN IF NOT EXISTS "version" integer`,
+      `ALTER TABLE "EmailTemplates" ADD COLUMN IF NOT EXISTS "enabled" boolean`,
+      `ALTER TABLE "EmailTemplates" ADD COLUMN IF NOT EXISTS "updatedBy" text`,
+
+      `ALTER TABLE "EmailOutbox" ADD COLUMN IF NOT EXISTS "recipient" text`,
+      `ALTER TABLE "EmailOutbox" ADD COLUMN IF NOT EXISTS "templateKey" text`,
+      `ALTER TABLE "EmailOutbox" ADD COLUMN IF NOT EXISTS "templateVersion" integer`,
+      `ALTER TABLE "EmailOutbox" ADD COLUMN IF NOT EXISTS "payloadJson" jsonb`,
+      `ALTER TABLE "EmailOutbox" ADD COLUMN IF NOT EXISTS "kind" text`,
+      `ALTER TABLE "EmailOutbox" ADD COLUMN IF NOT EXISTS "purpose" text`,
+      `ALTER TABLE "EmailOutbox" ADD COLUMN IF NOT EXISTS "idempotencyKey" text`,
+      `ALTER TABLE "EmailOutbox" ADD COLUMN IF NOT EXISTS "state" text`,
+      `ALTER TABLE "EmailOutbox" ADD COLUMN IF NOT EXISTS "subjectSnapshot" text`,
+      `ALTER TABLE "EmailOutbox" ADD COLUMN IF NOT EXISTS "htmlSnapshot" text`,
+      `ALTER TABLE "EmailOutbox" ADD COLUMN IF NOT EXISTS "textSnapshot" text`,
+      `ALTER TABLE "EmailOutbox" ADD COLUMN IF NOT EXISTS "fromNameSnapshot" text`,
+      `ALTER TABLE "EmailOutbox" ADD COLUMN IF NOT EXISTS "fromAddressSnapshot" text`,
+      `ALTER TABLE "EmailOutbox" ADD COLUMN IF NOT EXISTS "replyToSnapshot" text`,
+      `ALTER TABLE "EmailOutbox" ADD COLUMN IF NOT EXISTS "headersJson" jsonb`,
+      `ALTER TABLE "EmailOutbox" ADD COLUMN IF NOT EXISTS "orderId" text`,
+      `ALTER TABLE "EmailOutbox" ADD COLUMN IF NOT EXISTS "campaignId" text`,
+      `ALTER TABLE "EmailOutbox" ADD COLUMN IF NOT EXISTS "campaignRecipientId" text`,
+      `ALTER TABLE "EmailOutbox" ADD COLUMN IF NOT EXISTS "leaseOwner" text`,
+      `ALTER TABLE "EmailOutbox" ADD COLUMN IF NOT EXISTS "leaseExpiresAt" timestamptz`,
+      `ALTER TABLE "EmailOutbox" ADD COLUMN IF NOT EXISTS "attemptCount" integer`,
+      `ALTER TABLE "EmailOutbox" ADD COLUMN IF NOT EXISTS "maxAttempts" integer`,
+      `ALTER TABLE "EmailOutbox" ADD COLUMN IF NOT EXISTS "nextAttemptAt" timestamptz`,
+      `ALTER TABLE "EmailOutbox" ADD COLUMN IF NOT EXISTS "lastAttemptAt" timestamptz`,
+      `ALTER TABLE "EmailOutbox" ADD COLUMN IF NOT EXISTS "providerMessageId" text`,
+      `ALTER TABLE "EmailOutbox" ADD COLUMN IF NOT EXISTS "providerResponseJson" jsonb`,
+      `ALTER TABLE "EmailOutbox" ADD COLUMN IF NOT EXISTS "error" text`,
+      `ALTER TABLE "EmailOutbox" ADD COLUMN IF NOT EXISTS "cancelReason" text`,
+      `ALTER TABLE "EmailOutbox" ADD COLUMN IF NOT EXISTS "cancelledAt" timestamptz`,
+      `ALTER TABLE "EmailOutbox" ADD COLUMN IF NOT EXISTS "failedAt" timestamptz`,
+      `ALTER TABLE "EmailOutbox" ADD COLUMN IF NOT EXISTS "sentAt" timestamptz`,
+      `ALTER TABLE "EmailOutbox" ADD COLUMN IF NOT EXISTS "deliveredAt" timestamptz`,
+
+      `ALTER TABLE "EmailEvents" ADD COLUMN IF NOT EXISTS "provider" text`,
+      `ALTER TABLE "EmailEvents" ADD COLUMN IF NOT EXISTS "providerEventId" text`,
+      `ALTER TABLE "EmailEvents" ADD COLUMN IF NOT EXISTS "outboxId" text`,
+      `ALTER TABLE "EmailEvents" ADD COLUMN IF NOT EXISTS "providerMessageId" text`,
+      `ALTER TABLE "EmailEvents" ADD COLUMN IF NOT EXISTS "campaignId" text`,
+      `ALTER TABLE "EmailEvents" ADD COLUMN IF NOT EXISTS "email" text`,
+      `ALTER TABLE "EmailEvents" ADD COLUMN IF NOT EXISTS "eventType" text`,
+      `ALTER TABLE "EmailEvents" ADD COLUMN IF NOT EXISTS "eventCategory" text`,
+      `ALTER TABLE "EmailEvents" ADD COLUMN IF NOT EXISTS "eventAt" timestamptz`,
+      `ALTER TABLE "EmailEvents" ADD COLUMN IF NOT EXISTS "rawDigest" text`,
+      `ALTER TABLE "EmailEvents" ADD COLUMN IF NOT EXISTS "processedAt" timestamptz`,
+      `ALTER TABLE "EmailEvents" ADD COLUMN IF NOT EXISTS "processingError" text`,
+      `ALTER TABLE "EmailEvents" ADD COLUMN IF NOT EXISTS "metadataJson" jsonb`,
+
+      `ALTER TABLE "MarketingContacts" ADD COLUMN IF NOT EXISTS "email" text`,
+      `ALTER TABLE "MarketingContacts" ADD COLUMN IF NOT EXISTS "userId" text`,
+      `ALTER TABLE "MarketingContacts" ADD COLUMN IF NOT EXISTS "state" text`,
+      `ALTER TABLE "MarketingContacts" ADD COLUMN IF NOT EXISTS "consentSource" text`,
+      `ALTER TABLE "MarketingContacts" ADD COLUMN IF NOT EXISTS "consentAt" timestamptz`,
+      `ALTER TABLE "MarketingContacts" ADD COLUMN IF NOT EXISTS "lastEligibleAt" timestamptz`,
+      `ALTER TABLE "MarketingContacts" ADD COLUMN IF NOT EXISTS "unsubscribedAt" timestamptz`,
+      `ALTER TABLE "MarketingContacts" ADD COLUMN IF NOT EXISTS "unsubscribeReason" text`,
+      `ALTER TABLE "MarketingContacts" ADD COLUMN IF NOT EXISTS "suppressedAt" timestamptz`,
+      `ALTER TABLE "MarketingContacts" ADD COLUMN IF NOT EXISTS "suppressionReason" text`,
+      `ALTER TABLE "MarketingContacts" ADD COLUMN IF NOT EXISTS "providerContactId" text`,
+      `ALTER TABLE "MarketingContacts" ADD COLUMN IF NOT EXISTS "syncState" text`,
+      `ALTER TABLE "MarketingContacts" ADD COLUMN IF NOT EXISTS "metadataJson" jsonb`,
+
+      `ALTER TABLE "Campaigns" ADD COLUMN IF NOT EXISTS "name" text`,
+      `ALTER TABLE "Campaigns" ADD COLUMN IF NOT EXISTS "subject" text`,
+      `ALTER TABLE "Campaigns" ADD COLUMN IF NOT EXISTS "mode" text`,
+      `ALTER TABLE "Campaigns" ADD COLUMN IF NOT EXISTS "preheader" text`,
+      `ALTER TABLE "Campaigns" ADD COLUMN IF NOT EXISTS "heading" text`,
+      `ALTER TABLE "Campaigns" ADD COLUMN IF NOT EXISTS "bodyText" text`,
+      `ALTER TABLE "Campaigns" ADD COLUMN IF NOT EXISTS "ctaLabel" text`,
+      `ALTER TABLE "Campaigns" ADD COLUMN IF NOT EXISTS "ctaUrl" text`,
+      `ALTER TABLE "Campaigns" ADD COLUMN IF NOT EXISTS "advancedHtml" text`,
+      `ALTER TABLE "Campaigns" ADD COLUMN IF NOT EXISTS "advancedText" text`,
+      `ALTER TABLE "Campaigns" ADD COLUMN IF NOT EXISTS "html" text`,
+      `ALTER TABLE "Campaigns" ADD COLUMN IF NOT EXISTS "text" text`,
+      `ALTER TABLE "Campaigns" ADD COLUMN IF NOT EXISTS "revision" integer`,
+      `ALTER TABLE "Campaigns" ADD COLUMN IF NOT EXISTS "audienceType" text`,
+      `ALTER TABLE "Campaigns" ADD COLUMN IF NOT EXISTS "templateSnapshotJson" jsonb`,
+      `ALTER TABLE "Campaigns" ADD COLUMN IF NOT EXISTS "audienceDefinitionJson" jsonb`,
+      `ALTER TABLE "Campaigns" ADD COLUMN IF NOT EXISTS "recipientCount" integer`,
+      `ALTER TABLE "Campaigns" ADD COLUMN IF NOT EXISTS "eligibleRecipientCount" integer`,
+      `ALTER TABLE "Campaigns" ADD COLUMN IF NOT EXISTS "scheduledAt" timestamptz`,
+      `ALTER TABLE "Campaigns" ADD COLUMN IF NOT EXISTS "state" text`,
+      `ALTER TABLE "Campaigns" ADD COLUMN IF NOT EXISTS "testSentAt" timestamptz`,
+      `ALTER TABLE "Campaigns" ADD COLUMN IF NOT EXISTS "testRecipient" text`,
+      `ALTER TABLE "Campaigns" ADD COLUMN IF NOT EXISTS "testOutboxId" text`,
+      `ALTER TABLE "Campaigns" ADD COLUMN IF NOT EXISTS "testRevision" integer`,
+      `ALTER TABLE "Campaigns" ADD COLUMN IF NOT EXISTS "confirmationNonceHash" text`,
+      `ALTER TABLE "Campaigns" ADD COLUMN IF NOT EXISTS "confirmationExpiresAt" timestamptz`,
+      `ALTER TABLE "Campaigns" ADD COLUMN IF NOT EXISTS "confirmedBy" text`,
+      `ALTER TABLE "Campaigns" ADD COLUMN IF NOT EXISTS "confirmedAt" timestamptz`,
+      `ALTER TABLE "Campaigns" ADD COLUMN IF NOT EXISTS "queuedAt" timestamptz`,
+      `ALTER TABLE "Campaigns" ADD COLUMN IF NOT EXISTS "completedAt" timestamptz`,
+      `ALTER TABLE "Campaigns" ADD COLUMN IF NOT EXISTS "failedCount" integer`,
+      `ALTER TABLE "Campaigns" ADD COLUMN IF NOT EXISTS "suppressedCount" integer`,
+      `ALTER TABLE "Campaigns" ADD COLUMN IF NOT EXISTS "resendBroadcastId" text`,
+      `ALTER TABLE "Campaigns" ADD COLUMN IF NOT EXISTS "providerSegmentId" text`,
+      `ALTER TABLE "Campaigns" ADD COLUMN IF NOT EXISTS "approvedBy" text`,
+      `ALTER TABLE "Campaigns" ADD COLUMN IF NOT EXISTS "approvedAt" timestamptz`,
+      `ALTER TABLE "Campaigns" ADD COLUMN IF NOT EXISTS "sentAt" timestamptz`,
+
+      `ALTER TABLE "CampaignRecipients" ADD COLUMN IF NOT EXISTS "campaignId" text`,
+      `ALTER TABLE "CampaignRecipients" ADD COLUMN IF NOT EXISTS "contactId" text`,
+      `ALTER TABLE "CampaignRecipients" ADD COLUMN IF NOT EXISTS "customerId" text`,
+      `ALTER TABLE "CampaignRecipients" ADD COLUMN IF NOT EXISTS "email" text`,
+      `ALTER TABLE "CampaignRecipients" ADD COLUMN IF NOT EXISTS "roleSnapshot" text`,
+      `ALTER TABLE "CampaignRecipients" ADD COLUMN IF NOT EXISTS "eligibilitySnapshotJson" jsonb`,
+      `ALTER TABLE "CampaignRecipients" ADD COLUMN IF NOT EXISTS "templateSnapshotJson" jsonb`,
+      `ALTER TABLE "CampaignRecipients" ADD COLUMN IF NOT EXISTS "state" text`,
+      `ALTER TABLE "CampaignRecipients" ADD COLUMN IF NOT EXISTS "outboxId" text`,
+      `ALTER TABLE "CampaignRecipients" ADD COLUMN IF NOT EXISTS "providerMessageId" text`,
+      `ALTER TABLE "CampaignRecipients" ADD COLUMN IF NOT EXISTS "suppressionReason" text`,
+      `ALTER TABLE "CampaignRecipients" ADD COLUMN IF NOT EXISTS "queuedAt" timestamptz`,
+      `ALTER TABLE "CampaignRecipients" ADD COLUMN IF NOT EXISTS "sentAt" timestamptz`,
+      `ALTER TABLE "CampaignRecipients" ADD COLUMN IF NOT EXISTS "suppressedAt" timestamptz`,
+      `ALTER TABLE "CampaignRecipients" ADD COLUMN IF NOT EXISTS "failedAt" timestamptz`,
+
+      `UPDATE "EmailTemplates" SET "mode" = COALESCE("mode", 'structured'), "kind" = COALESCE("kind", 'transactional'),
+        "version" = COALESCE("version", 1), "enabled" = COALESCE("enabled", true),
+        "variablesJson" = COALESCE("variablesJson", '[]'::jsonb), "allowedVariablesJson" = COALESCE("allowedVariablesJson", "variablesJson", '[]'::jsonb)`,
+      `UPDATE "EmailOutbox" SET "state" = COALESCE("state", 'queued'), "attemptCount" = COALESCE("attemptCount", 0),
+        "maxAttempts" = COALESCE("maxAttempts", 6), "nextAttemptAt" = COALESCE("nextAttemptAt", now())`,
+      `UPDATE "MarketingContacts" SET "state" = COALESCE("state", 'eligible'),
+        "consentSource" = COALESCE("consentSource", 'legacy_account_backfill'), "consentAt" = COALESCE("consentAt", "createdAt"),
+        "lastEligibleAt" = CASE WHEN COALESCE("state", 'eligible') = 'eligible' THEN COALESCE("lastEligibleAt", now()) ELSE "lastEligibleAt" END`,
+      `UPDATE "Campaigns" SET "mode" = COALESCE("mode", 'structured'), "revision" = COALESCE("revision", 1),
+        "audienceType" = COALESCE("audienceType", 'all_accounts'), "state" = COALESCE("state", 'draft'),
+        "recipientCount" = COALESCE("recipientCount", 0), "eligibleRecipientCount" = COALESCE("eligibleRecipientCount", 0),
+        "failedCount" = COALESCE("failedCount", 0), "suppressedCount" = COALESCE("suppressedCount", 0)`,
+      `UPDATE "CampaignRecipients" SET "state" = COALESCE("state", 'pending')`,
+
+      `ALTER TABLE "EmailTemplates" ALTER COLUMN "mode" SET DEFAULT 'structured'`,
+      `ALTER TABLE "EmailTemplates" ALTER COLUMN "version" SET DEFAULT 1`,
+      `ALTER TABLE "EmailTemplates" ALTER COLUMN "enabled" SET DEFAULT true`,
+      `ALTER TABLE "EmailOutbox" ALTER COLUMN "state" SET DEFAULT 'queued'`,
+      `ALTER TABLE "EmailOutbox" ALTER COLUMN "attemptCount" SET DEFAULT 0`,
+      `ALTER TABLE "EmailOutbox" ALTER COLUMN "maxAttempts" SET DEFAULT 6`,
+      `ALTER TABLE "EmailOutbox" ALTER COLUMN "nextAttemptAt" SET DEFAULT now()`,
+      `ALTER TABLE "MarketingContacts" ALTER COLUMN "state" SET DEFAULT 'eligible'`,
+      `ALTER TABLE "Campaigns" ALTER COLUMN "mode" SET DEFAULT 'structured'`,
+      `ALTER TABLE "Campaigns" ALTER COLUMN "revision" SET DEFAULT 1`,
+      `ALTER TABLE "Campaigns" ALTER COLUMN "state" SET DEFAULT 'draft'`,
+      `ALTER TABLE "CampaignRecipients" ALTER COLUMN "state" SET DEFAULT 'pending'`,
+
+      `ALTER TABLE "EmailTemplates" ADD CONSTRAINT email_templates_mode_check CHECK ("mode" IN ('structured', 'advanced_html'))`,
+      `ALTER TABLE "EmailTemplates" ADD CONSTRAINT email_templates_kind_check CHECK ("kind" IN ('transactional', 'marketing', 'internal'))`,
+      `ALTER TABLE "EmailTemplates" ADD CONSTRAINT email_templates_version_check CHECK (COALESCE("version", 1) >= 1)`,
+      `ALTER TABLE "EmailOutbox" ADD CONSTRAINT email_outbox_delivery_values_check CHECK (
+        COALESCE("attemptCount", 0) >= 0 AND COALESCE("maxAttempts", 1) > 0
+        AND "state" IN ('queued', 'leased', 'retry', 'uncertain', 'sent', 'delivered', 'suppressed', 'cancelled', 'failed')
+      )`,
+      `ALTER TABLE "MarketingContacts" ADD CONSTRAINT marketing_contacts_state_check CHECK (
+        "state" IN ('eligible', 'unsubscribed', 'bounced', 'complained', 'suppressed')
+      )`,
+      `ALTER TABLE "Campaigns" ADD CONSTRAINT campaigns_values_check CHECK (
+        "mode" IN ('structured', 'advanced_html') AND "audienceType" IN ('all_accounts', 'customer_accounts')
+        AND COALESCE("revision", 1) >= 1 AND COALESCE("recipientCount", 0) >= 0
+        AND COALESCE("eligibleRecipientCount", 0) >= 0 AND COALESCE("failedCount", 0) >= 0 AND COALESCE("suppressedCount", 0) >= 0
+      )`,
+      `ALTER TABLE "EmailOutbox" ADD CONSTRAINT email_outbox_order_fk FOREIGN KEY ("orderId") REFERENCES "Orders"("id") ON DELETE SET NULL`,
+      `ALTER TABLE "EmailOutbox" ADD CONSTRAINT email_outbox_campaign_fk FOREIGN KEY ("campaignId") REFERENCES "Campaigns"("id") ON DELETE SET NULL`,
+      `ALTER TABLE "EmailOutbox" ADD CONSTRAINT email_outbox_campaign_recipient_fk FOREIGN KEY ("campaignRecipientId") REFERENCES "CampaignRecipients"("id") ON DELETE SET NULL`,
+      `ALTER TABLE "EmailEvents" ADD CONSTRAINT email_events_outbox_fk FOREIGN KEY ("outboxId") REFERENCES "EmailOutbox"("id") ON DELETE SET NULL`,
+      `ALTER TABLE "MarketingContacts" ADD CONSTRAINT marketing_contacts_user_fk FOREIGN KEY ("userId") REFERENCES "Users"("id") ON DELETE SET NULL`,
+      `ALTER TABLE "CampaignRecipients" ADD CONSTRAINT campaign_recipients_contact_fk FOREIGN KEY ("contactId") REFERENCES "MarketingContacts"("id") ON DELETE SET NULL`,
+      `ALTER TABLE "CampaignRecipients" ADD CONSTRAINT campaign_recipients_customer_fk FOREIGN KEY ("customerId") REFERENCES "Users"("id") ON DELETE SET NULL`,
+
+      `CREATE UNIQUE INDEX IF NOT EXISTS email_templates_key_idx ON "EmailTemplates" ("templateKey")`,
+      `CREATE UNIQUE INDEX IF NOT EXISTS email_outbox_idempotency_idx ON "EmailOutbox" ("idempotencyKey")`,
+      `CREATE INDEX IF NOT EXISTS email_outbox_work_idx ON "EmailOutbox" ("state", "nextAttemptAt", "leaseExpiresAt")`,
+      `CREATE INDEX IF NOT EXISTS email_outbox_order_purpose_idx ON "EmailOutbox" ("orderId", "purpose")`,
+      `CREATE INDEX IF NOT EXISTS email_outbox_campaign_state_idx ON "EmailOutbox" ("campaignId", "state")`,
+      `CREATE INDEX IF NOT EXISTS email_outbox_provider_message_idx ON "EmailOutbox" ("providerMessageId")`,
+      `CREATE UNIQUE INDEX IF NOT EXISTS email_events_provider_idx ON "EmailEvents" ("provider", "providerEventId")`,
+      `CREATE INDEX IF NOT EXISTS email_events_provider_message_idx ON "EmailEvents" ("providerMessageId")`,
+      `CREATE UNIQUE INDEX IF NOT EXISTS marketing_contacts_email_idx ON "MarketingContacts" (lower("email"))`,
+      `CREATE INDEX IF NOT EXISTS marketing_contacts_state_idx ON "MarketingContacts" ("state")`,
+      `CREATE UNIQUE INDEX IF NOT EXISTS marketing_contacts_user_idx ON "MarketingContacts" ("userId") WHERE "userId" IS NOT NULL`,
+      `CREATE INDEX IF NOT EXISTS campaigns_state_schedule_idx ON "Campaigns" ("state", "scheduledAt")`,
+      `CREATE UNIQUE INDEX IF NOT EXISTS campaign_recipients_email_idx ON "CampaignRecipients" ("campaignId", lower("email"))`,
+      `CREATE INDEX IF NOT EXISTS campaign_recipients_state_idx ON "CampaignRecipients" ("campaignId", "state")`,
+    ]);
+
+    const templates = [
+      ['order_placed', 'Order placed', 'transactional', 'Order {{order.number}} placed', 'we received your order', 'order placed', 'Thanks {{customer.firstName}}. Your order {{order.number}} is awaiting payment of {{order.cryptoAmount}} {{order.payCurrency}}.', 'View order', '{{order.url}}', ['customer.firstName', 'order.number', 'order.cryptoAmount', 'order.payCurrency', 'order.url']],
+      ['payment_due', 'Payment due', 'transactional', 'Payment due for {{order.number}}', 'your payment window is closing', 'payment due soon', 'Payment for {{order.number}} is due at {{order.paymentExpiresAt}}.', 'Complete payment', '{{order.url}}', ['order.number', 'order.paymentExpiresAt', 'order.url']],
+      ['payment_received', 'Payment received', 'transactional', 'Payment received for {{order.number}}', 'payment confirmed', 'payment received', 'We received your payment and are preparing order {{order.number}}.', 'View order', '{{order.url}}', ['order.number', 'order.url']],
+      ['order_shipped', 'Order shipped', 'transactional', 'Order {{order.number}} shipped', 'your parcel is on the way', 'order shipped', 'Your order has shipped. Tracking number: {{order.trackingNumber}}.', 'Track order', '{{order.url}}', ['order.number', 'order.trackingNumber', 'order.url']],
+      ['shipping_update', 'Shipping update', 'transactional', 'Shipping update for {{order.number}}', 'your delivery status changed', 'shipping update', 'Your order status is now {{order.status}}.', 'Track order', '{{order.url}}', ['order.number', 'order.status', 'order.url']],
+      ['order_refunded', 'Order refunded', 'transactional', 'Order {{order.number}} refunded', 'your refund was approved', 'order refunded', 'Order {{order.number}} has been refunded.', 'View order', '{{order.url}}', ['order.number', 'order.url']],
+      ['order_cancelled', 'Order cancelled', 'transactional', 'Order {{order.number}} cancelled', 'your order was cancelled', 'order cancelled', 'Order {{order.number}} has been cancelled.', 'View order', '{{order.url}}', ['order.number', 'order.url']],
+      ['order_expired', 'Order expired', 'transactional', 'Order {{order.number}} expired', 'the payment window ended', 'order expired', 'The payment window for order {{order.number}} has expired.', 'View order', '{{order.url}}', ['order.number', 'order.url']],
+      ['admin_order_placed', 'Admin order alert', 'internal', 'New order {{order.number}}', 'a new order was placed', 'new order', '{{customer.name}} placed order {{order.number}} for {{order.total}}.', 'Open order', '{{order.adminUrl}}', ['customer.name', 'order.number', 'order.total', 'order.adminUrl']],
+      ['admin_payment_received', 'Admin payment alert', 'internal', 'Payment received: {{order.number}}', 'an order was paid', 'payment received', 'Payment was received for order {{order.number}}.', 'Open order', '{{order.adminUrl}}', ['order.number', 'order.adminUrl']],
+      ['campaign_announcement', 'Campaign announcement', 'marketing', '{{campaign.subject}}', '', '{{campaign.heading}}', '{{campaign.body}}', '{{campaign.ctaLabel}}', '{{campaign.ctaUrl}}', ['campaign.subject', 'campaign.heading', 'campaign.body', 'campaign.ctaLabel', 'campaign.ctaUrl', 'campaign.unsubscribeUrl']],
+    ] as const;
+    for (const [templateKey, name, kind, subject, preheader, heading, bodyText, ctaLabel, ctaUrlTemplate, variables] of templates) {
+      await tx.query(
+        `INSERT INTO "EmailTemplates" (
+          "id", "templateKey", "name", "kind", "mode", "subject", "preheader", "heading", "bodyText",
+          "ctaLabel", "ctaUrlTemplate", "variablesJson", "allowedVariablesJson", "version", "enabled"
+        ) VALUES ($1,$2,$3,$4,'structured',$5,$6,$7,$8,$9,$10,$11::jsonb,$11::jsonb,1,true)
+        ON CONFLICT ("templateKey") DO NOTHING`,
+        [crypto.randomUUID(), templateKey, name, kind, subject, preheader, heading, bodyText, ctaLabel, ctaUrlTemplate, JSON.stringify(variables)],
+      );
+    }
+
+    const { rows: users } = await tx.query(`SELECT "id", lower("email") AS "email", "createdAt" FROM "Users" WHERE "email" IS NOT NULL AND trim("email") <> ''`);
+    for (const user of users) {
+      await tx.query(
+        `INSERT INTO "MarketingContacts" (
+          "id", "email", "userId", "state", "consentSource", "consentAt", "lastEligibleAt"
+        ) VALUES ($1,$2,$3,'eligible','legacy_account_backfill',$4,now())
+        ON CONFLICT DO NOTHING`,
+        [crypto.randomUUID(), user.email, user.id, user.createdAt ?? new Date().toISOString()],
+      );
+    }
+  },
+};
+
+const migrations: Migration[] = [constraints, backfill, catalogShipping, emailMarketing];
 
 export async function runMigrations(db: Queryable) {
   await db.query(`CREATE TABLE IF NOT EXISTS "SchemaMigrations" (

@@ -15,17 +15,18 @@ import Orders from './pages/Orders';
 import OrderDetail from './pages/OrderDetail';
 import Account from './pages/Account';
 import Support from './pages/Support';
+import Unsubscribe from './pages/Unsubscribe';
 import Policy, { POLICIES } from './pages/Policy';
 import Login from './pages/Login';
 
 const qc = new QueryClient({ defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } } });
 
-function CartStockSync() {
+function CartCatalogSync() {
   const { data } = useStorefront();
-  const { syncStock } = useCart();
+  const { syncCatalog } = useCart();
   useEffect(() => {
-    if (data) syncStock(Object.fromEntries(data.products.map((product) => [product.id, product.stock])));
-  }, [data, syncStock]);
+    if (data) syncCatalog(data.products);
+  }, [data, syncCatalog]);
   return null;
 }
 
@@ -36,11 +37,24 @@ function RequireAuth({ children }: { children: ReactNode }) {
   return <>{children}</>;
 }
 
+function Footer() {
+  const { data } = useStorefront();
+  return (
+    <footer className="border-t py-8 text-center text-xs text-muted-foreground px-4 space-y-3">
+      <nav className="flex flex-wrap justify-center gap-x-5 gap-y-2">
+        {POLICIES.map((policy) => <Link key={policy.slug} to={`/policies/${policy.slug}`} className="hover:text-foreground">{policy.title}</Link>)}
+        <Link to="/support" className="hover:text-foreground">Support</Link>
+      </nav>
+      <p>© {new Date().getFullYear()} {data?.storeName || 'PinLabs'} · All products are sold strictly for laboratory research use. Not for human consumption.</p>
+    </footer>
+  );
+}
+
 export default function App() {
   return (
     <QueryClientProvider client={qc}>
       <CartProvider>
-        <CartStockSync />
+        <CartCatalogSync />
         <BrowserRouter>
           <div className="min-h-screen flex flex-col">
             <ThemeColors />
@@ -54,19 +68,13 @@ export default function App() {
                 <Route path="/orders" element={<RequireAuth><Orders /></RequireAuth>} />
                 <Route path="/account" element={<RequireAuth><Account /></RequireAuth>} />
                 <Route path="/support" element={<Support />} />
+                <Route path="/unsubscribe" element={<Unsubscribe />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/policies/:slug" element={<Policy />} />
                 <Route path="/orders/:id" element={<RequireAuth><OrderDetail /></RequireAuth>} />
               </Routes>
             </main>
-            <footer className="border-t py-8 text-center text-xs text-muted-foreground px-4 space-y-3">
-              <nav className="flex flex-wrap justify-center gap-x-5 gap-y-2">
-                {POLICIES.map((p) => <Link key={p.slug} to={`/policies/${p.slug}`} className="hover:text-foreground">{p.title}</Link>)}
-                <Link to="/support" className="hover:text-foreground">Support</Link>
-              </nav>
-              <p>
-              © {new Date().getFullYear()} PinLabs · All products are sold strictly for laboratory research use. Not for human consumption.</p>
-            </footer>
+            <Footer />
           </div>
           <Toaster />
         </BrowserRouter>

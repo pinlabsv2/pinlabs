@@ -16,7 +16,10 @@ export default createEndpoint({
     const esc = (s: unknown) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
     const n = (v: unknown) => { const x = Number(v); return Number.isFinite(x) ? x : 0; };
     const money = (v: unknown) => `$${n(v).toFixed(2)}`;
-    const rows = o.items.map((i) => `<tr><td>${esc(i.name)}</td><td class="num">${n(i.quantity)}</td><td class="num">${money(i.price)}</td><td class="num">${money(n(i.price) * n(i.quantity))}</td></tr>`).join('');
+    const rows = o.items.map((item) => `<tr><td>${esc(item.name)}${item.shippingOptionName ? `<div class="muted" style="font-size:7.5pt">Ships via ${esc(item.shippingOptionName)}</div>` : ''}</td><td class="num">${n(item.quantity)}</td><td class="num">${money(item.price)}</td><td class="num">${money(n(item.price) * n(item.quantity))}</td></tr>`).join('');
+    const shippingRows = o.shippingBreakdown.length
+      ? o.shippingBreakdown.map((option) => `<tr><td>Shipping · ${esc(option.name)}</td><td class="num">${money(option.price)}</td></tr>`).join('')
+      : `<tr><td>Shipping</td><td class="num">${o.shipping ? money(o.shipping) : 'Free'}</td></tr>`;
 
     const html = `<!doctype html><html><head><meta charset="utf-8" /><style>
       @page { size: a4; margin: 16mm; }
@@ -46,7 +49,7 @@ export default createEndpoint({
       <table class="totals">
         <tr><td>Subtotal</td><td class="num">${money(o.subtotal)}</td></tr>
         ${o.discount > 0 ? `<tr><td>Discount ${esc(o.discountCode)}</td><td class="num">−${money(o.discount)}</td></tr>` : ''}
-        <tr><td>Shipping</td><td class="num">${o.shipping ? money(o.shipping) : 'Free'}</td></tr>
+        ${shippingRows}
         <tr class="grand"><td>Total</td><td class="num">${money(o.total)}</td></tr>
       </table>
       <div class="pay"><b>Payment:</b> ${n(o.cryptoAmount)} ${esc(o.payCurrency)} ${o.paidAt ? `— received ${new Date(o.paidAt).toLocaleDateString()}` : '— not yet received'}

@@ -10,6 +10,7 @@ import { Button } from '@/ui-kit/ui/button';
 import { Input } from '@/ui-kit/ui/input';
 import { Label } from '@/ui-kit/ui/label';
 import { Skeleton } from '@/ui-kit/ui/skeleton';
+import { Switch } from '@/ui-kit/ui/switch';
 import AddressFields, { Address } from '../components/AddressFields';
 
 const schema = z.object({
@@ -23,15 +24,16 @@ export default function Account() {
   const [first, setFirst] = useState('');
   const [last, setLast] = useState('');
   const [address, setAddress] = useState<Address>({ street: '', city: '', postalCode: '', country: '' });
+  const [marketingEmails, setMarketingEmails] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
-  useEffect(() => { if (data) { setFirst(data.profile.firstName); setLast(data.profile.lastName); setAddress(data.profile.address); } }, [data]);
+  useEffect(() => { if (data) { setFirst(data.profile.firstName); setLast(data.profile.lastName); setAddress(data.profile.address); setMarketingEmails(data.marketingEmails); } }, [data]);
 
   const save = async () => {
     const r = schema.safeParse({ firstName: first, lastName: last });
     if (!r.success) return setErrors(Object.fromEntries(r.error.issues.map((i) => [i.path[0], i.message])));
     setErrors({}); setBusy(true);
-    try { qc.setQueryData(['account'], await myAccount({ save: { firstName: first, lastName: last, address } })); toast.success('Account saved'); }
+    try { qc.setQueryData(['account'], await myAccount({ save: { firstName: first, lastName: last, address }, marketingEmails })); toast.success('Account saved'); }
     catch (e: any) { toast.error(e?.message ?? 'Save failed'); } finally { setBusy(false); }
   };
 
@@ -53,6 +55,9 @@ export default function Account() {
       <section className="rounded-xl border bg-card p-5 space-y-4">
         <div><h2 className="font-semibold">Default shipping address</h2><p className="text-xs text-muted-foreground">Pre-filled at checkout.</p></div>
         <AddressFields value={address} onChange={setAddress} errors={{}} />
+      </section>
+      <section className="border bg-card p-5">
+        <label className="flex items-start justify-between gap-5"><span><span className="block font-semibold">Announcements and promotions</span><span className="mt-1 block text-xs text-muted-foreground">Receive occasional store announcements. Order and payment messages are always sent separately.</span></span><Switch checked={marketingEmails} onCheckedChange={setMarketingEmails} aria-label="Receive announcements and promotions" /></label>
       </section>
       <div className="flex gap-2">
         <Button onClick={save} disabled={busy}>{busy && <Loader2 className="size-4 animate-spin" />}Save changes</Button>

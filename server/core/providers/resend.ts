@@ -3,10 +3,13 @@ import { ProviderError, type BroadcastInput, type BroadcastSnapshot, type EmailM
 const asObject = (value: unknown): Record<string, unknown> => value && typeof value === 'object' ? value as Record<string, unknown> : {};
 const requestJson = async (url: string, init: RequestInit): Promise<Record<string, unknown>> => {
   let response: Response;
-  try { response = await fetch(url, init); }
-  catch (error) { throw new ProviderError(error instanceof Error ? error.message : 'Email provider request failed', 'network_error', undefined, true); }
+  try { response = await fetch(url, { ...init, signal: AbortSignal.timeout(8_000) }); }
+  catch (error) {
+    const timedOut = error instanceof Error && error.name === 'TimeoutError';
+    throw new ProviderError(timedOut ? 'Email provider request timed out' : error instanceof Error ? error.message : 'Email provider request failed', timedOut ? 'timeout' : 'network_error', undefined, true);
+  }
   const body = asObject(await response.json().catch(() => ({})));
-  if (!response.ok) throw new ProviderError(String(body.message || `Email provider request failed (${response.status})`), 'provider_error', response.status, response.status === 429 || response.status >= 500);
+  if (!response.ok) throw new ProviderError(String(body.message || `Email provider request failed (${response.status})`), 'provider_error', response.status, response.status === 408 || response.status === 409 || response.status === 429 || response.status >= 500);
   return body;
 };
 
@@ -36,7 +39,9 @@ export class ResendProvider implements EmailProvider {
         html: message.html, text: message.text, reply_to: message.replyTo, headers: message.headers,
       }),
     });
-    return { providerMessageId: String(raw.id || ''), raw };
+    const providerMessageId = typeof raw.id === 'string' ? raw.id.trim() : '';
+    if (!providerMessageId) throw new ProviderError('Email provider returned no message ID', 'invalid_response', undefined, true);
+    return { providerMessageId, raw };
   }
 
   async createBroadcast(input: BroadcastInput, idempotencyKey: string): Promise<BroadcastSnapshot> {

@@ -60,10 +60,10 @@ export default function OrderDetail() {
       <section className="rounded-xl border bg-card p-5 grid md:grid-cols-2 gap-6">
         <div className="space-y-2 text-sm">
           <h2 className="font-semibold mb-2">Items</h2>
-          {order.items.map((i) => <div key={i.productId} className="flex justify-between gap-3"><span>{i.quantity}× {i.name}</span><span className="font-mono">{usd(i.price * i.quantity)}</span></div>)}
+          {order.items.map((item, index) => <div key={`${item.productId}:${item.variantId ?? 'parent'}:${index}`} className="flex justify-between gap-3"><span>{item.quantity}× {item.name}{item.shippingOptionName && <span className="block text-xs text-muted-foreground">Ships via {item.shippingOptionName}</span>}</span><span className="font-mono">{usd(item.price * item.quantity)}</span></div>)}
           <div className="border-t pt-2 space-y-1">
             {order.discount > 0 && <div className="flex justify-between text-promo"><span>Discount {order.discountCode}</span><span className="font-mono">−{usd(order.discount)}</span></div>}
-            <div className="flex justify-between"><span>Shipping</span><span className="font-mono">{order.shipping ? usd(order.shipping) : 'Free'}</span></div>
+            {order.shippingBreakdown.length ? order.shippingBreakdown.map((option) => <div key={option.shippingOptionId} className="flex justify-between"><span>Shipping · {option.name}</span><span className="font-mono">{option.price ? usd(option.price) : 'Free'}</span></div>) : <div className="flex justify-between"><span>Shipping</span><span className="font-mono">{order.shipping ? usd(order.shipping) : 'Free'}</span></div>}
             <div className="flex justify-between font-semibold"><span>Total</span><span className="font-mono">{usd(order.total)}</span></div>
           </div>
         </div>

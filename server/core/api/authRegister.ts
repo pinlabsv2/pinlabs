@@ -23,6 +23,11 @@ export default createEndpoint({
           `INSERT INTO "Users" ("id", "email", "passwordHash", "firstName", "lastName", "role") VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
           [id, email, passwordHash, input.firstName?.trim() ?? '', input.lastName?.trim() ?? '', role],
         );
+        await tx.query(
+          `INSERT INTO "MarketingContacts" ("id", "email", "userId", "state", "consentSource", "consentAt", "lastEligibleAt")
+           VALUES ($1,$2,$3,'eligible','account_registration',now(),now()) ON CONFLICT DO NOTHING`,
+          [crypto.randomUUID(), email, id],
+        );
         return rows[0];
       });
       context.setCookies.push(await sessionCookie(u.id));

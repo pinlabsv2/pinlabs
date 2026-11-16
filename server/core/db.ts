@@ -117,6 +117,9 @@ function table<R extends { id: string }, I>(name: string) {
 
 export const db = {
   products: table<T.ProductsRecordType, T.ProductsRecordInput>('Products'),
+  shippingOptions: table<T.ShippingOptionsRecordType, T.ShippingOptionsRecordInput>('ShippingOptions'),
+  productVariants: table<T.ProductVariantsRecordType, T.ProductVariantsRecordInput>('ProductVariants'),
+  subcategoryDividers: table<T.SubcategoryDividersRecordType, T.SubcategoryDividersRecordInput>('SubcategoryDividers'),
   discountCodes: table<T.DiscountCodesRecordType, T.DiscountCodesRecordInput>('DiscountCodes'),
   storeSettings: table<T.StoreSettingsRecordType, T.StoreSettingsRecordInput>('StoreSettings'),
   orders: table<T.OrdersRecordType, T.OrdersRecordInput>('Orders'),

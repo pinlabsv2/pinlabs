@@ -1,5 +1,6 @@
 import { db } from './db.js';
 import type { OrdersRecordType } from './types.js';
+import { enqueueOrderStatusEmail, enqueuePaymentReceivedEmails } from './email/orderEmails.js';
 import type { QueryRunner } from './pg.js';
 
 async function lockOrderState(tx: QueryRunner) {
@@ -14,15 +15,17 @@ export async function claimOrderPayment(orderId: string, hash: string): Promise<
       `SELECT "id" FROM "Orders" WHERE "transactionHash" = $1 AND "id" <> $2 LIMIT 1`,
       [hash, orderId],
     );
-    if (duplicate.rows[0]) return false;
+    if (duplicate.rows[0]) return undefined;
     const { rows } = await tx.query(
       `UPDATE "Orders"
          SET "status" = 'Processing', "transactionHash" = $2, "paidAt" = now(), "updatedAt" = now()
        WHERE "id" = $1 AND "status" = 'Awaiting Payment'
-       RETURNING "id"`,
+       RETURNING *`,
       [orderId, hash],
     );
-    return !!rows[0];
+    const order = rows[0] as OrdersRecordType | undefined;
+    if (order) await enqueuePaymentReceivedEmails(tx, order);
+    return order;
   });
   return claimed ? db.orders.findOne({ id: orderId }) : undefined;
 }
@@ -41,12 +44,23 @@ export async function releaseOrderReservation(orderId: string, status: 'Expired'
     );
     if (!changed.rows[0]) return false;
 
-    const items = JSON.parse(order.itemsJson ?? '[]') as { productId: string; quantity: number }[];
+    const parsedItems = typeof order.itemsJson === 'string' ? JSON.parse(order.itemsJson || '[]') : order.itemsJson;
+    const items = Array.isArray(parsedItems) ? parsedItems as Array<{ productId?: string; variantId?: string | null; quantity?: number }> : [];
+    const reservations = new Map<string, { table: 'Products' | 'ProductVariants'; id: string; quantity: number }>();
     for (const item of items) {
+      const id = item.variantId || item.productId;
+      const quantity = Number(item.quantity ?? 0);
+      if (!id || !Number.isInteger(quantity) || quantity <= 0) continue;
+      const table = item.variantId ? 'ProductVariants' : 'Products';
+      const key = `${table}:${id}`;
+      const existing = reservations.get(key);
+      reservations.set(key, { table, id, quantity: (existing?.quantity ?? 0) + quantity });
+    }
+    for (const reservation of [...reservations.values()].sort((a, b) => `${a.table}:${a.id}`.localeCompare(`${b.table}:${b.id}`))) {
       await tx.query(
-        `UPDATE "Products" SET "stock" = "stock" + $2, "updatedAt" = now()
+        `UPDATE "${reservation.table}" SET "stock" = "stock" + $2, "updatedAt" = now()
          WHERE "id" = $1 AND "stock" IS NOT NULL`,
-        [item.productId, item.quantity],
+        [reservation.id, reservation.quantity],
       );
     }
 
@@ -66,6 +80,7 @@ export async function releaseOrderReservation(orderId: string, status: 'Expired'
         [discountId],
       );
     }
+    await enqueueOrderStatusEmail(tx, { ...order, status }, status === 'Expired' ? 'order_expired' : 'order_cancelled', status.toLowerCase());
     return true;
   });
 }

@@ -1,6 +1,6 @@
 import { db } from '../../../core/db.js';
 import type { OrdersRecordType } from '../../../core/db.js';
-import { notifyCustomer } from './notify.js';
+import { enqueueOrderStatusEmail } from '../../../core/email/orderEmails.js';
 
 const API = (process.env.TRACK17_API_BASE_URL || 'https://api.17track.net/track/v2.4').replace(/\/$/, '');
 export const ACTIVE_SHIPPING = ['Shipped', 'In Transit', 'Out for Delivery', 'Exception'];
@@ -57,22 +57,26 @@ export async function applyTrackInfo(number: string, info: any): Promise<boolean
   const { status, events, carrier } = parseTrackInfo(info);
   const newStatus = mapStatus(status);
   let any = false;
-  for (const order of records) {
-    const moved = !!newStatus && newStatus !== order.status && !LOCKED.includes(order.status ?? '');
-    await db.orders.update({
-      id: order.id,
-      record: {
-        trackingStatus: status ?? order.trackingStatus ?? null,
-        ...(events.length ? { trackingEventsJson: JSON.stringify(events) } : {}),
-        carrier: carrier || order.carrier || null,
-        lastTrackingCheck: new Date().toISOString(),
-        ...(moved ? { status: newStatus } : {}),
-      },
+  for (const record of records) {
+    const moved = await db.transaction(async (tx) => {
+      const locked = await tx.query(`SELECT * FROM "Orders" WHERE "id" = $1 FOR UPDATE`, [record.id]);
+      const order = locked.rows[0];
+      if (!order) return false;
+      const statusMoved = !!newStatus && newStatus !== order.status && !LOCKED.includes(String(order.status ?? ''));
+      const updated = await tx.query(
+        `UPDATE "Orders" SET "trackingStatus" = $2, "trackingEventsJson" = COALESCE($3, "trackingEventsJson"),
+          "carrier" = COALESCE($4, "carrier"), "lastTrackingCheck" = now(),
+          "status" = CASE WHEN $5::boolean THEN $6 ELSE "status" END, "updatedAt" = now()
+         WHERE "id" = $1 RETURNING *`,
+        [record.id, status ?? order.trackingStatus ?? null, events.length ? JSON.stringify(events) : null, carrier || null, statusMoved, newStatus],
+      );
+      if (statusMoved) {
+        const identity = `${newStatus}:${events[0]?.time ?? ''}:${events[0]?.description ?? ''}`;
+        await enqueueOrderStatusEmail(tx, updated.rows[0], 'shipping_update', identity);
+      }
+      return statusMoved;
     });
-    if (moved) {
-      any = true;
-      await notifyCustomer(order, 'shipping_update', `Your order is now: ${newStatus}. ${events[0]?.description ?? ''}`);
-    }
+    if (moved) any = true;
   }
   return any;
 }

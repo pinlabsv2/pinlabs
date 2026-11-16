@@ -1,7 +1,6 @@
 import { db } from '../../../core/db.js';
 import type { StoreSettingsRecordType } from '../../../core/db.js';
 import { claimOrderPayment, releaseOrderReservation } from '../../../core/orderState.js';
-import { notifyCustomer } from './notify.js';
 
 export const CURRENCIES = ['BTC', 'ETH', 'SOL', 'LTC', 'USDT-ERC20', 'USDT-TRC20', 'USDC', 'TRX'] as const;
 export type PayCurrency = (typeof CURRENCIES)[number];
@@ -180,7 +179,6 @@ const FINDERS: Record<PayCurrency, Finder> = {
 export async function markPaid(orderId: string, hash: string) {
   const order = await claimOrderPayment(orderId, hash);
   if (!order) return false;
-  await notifyCustomer(order, 'payment_received', `Payment received (${hash}). We're preparing your order.`);
   return true;
 }
 
