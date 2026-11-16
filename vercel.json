@@ -3,6 +3,6 @@
   "framework": "vite",
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
-  "crons": [{ "path": "/api/runEmailMaintenance", "schedule": "*/5 * * * *" }],
+  "crons": [{ "path": "/api/runEmailMaintenance", "schedule": "0 0 * * *" }],
   "rewrites": [{ "source": "/((?!api/).*)", "destination": "/index.html" }]
 }
