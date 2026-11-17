@@ -20,7 +20,7 @@ try {
   await pg.installTestDatabase(database);
   const { migrate } = await mod('server/core/schema.js');
   await migrate(database);
-  assert.equal((await database.query('SELECT * FROM "SchemaMigrations"')).rows.length, 6);
+  assert.equal((await database.query('SELECT * FROM "SchemaMigrations"')).rows.length, 7);
   const { default: products } = await mod('server/admin/api/manageProducts.js');
   const { default: storefront } = await mod('server/shop/api/getStorefront.js');
   const { default: settings } = await mod('server/admin/api/manageSettings.js');
@@ -39,6 +39,33 @@ try {
     assert.equal(shop.theme.seasonal, seasonalTheme);
     assert.equal(shop.minimumAge, 21);
   }
+  const { activeSeason, designs, seasonalDefaults } = await mod('shared/seasonal.js');
+  const { readableForeground } = await mod('shared/themeColor.js');
+  assert.equal(readableForeground('#FFFF00'), '0 0% 0%');
+  assert.equal(readableForeground('#000080'), '0 0% 100%');
+  assert.equal(readableForeground('#FFFFFF'), '0 0% 0%');
+  const clock = Date.parse('2030-01-01T00:00:00Z');
+  for (const season of seasons) {
+    const cfg = { ...seasonalDefaults, seasonalTheme: season, themeStartsAt: new Date(clock).toISOString(), themeEndsAt: new Date(clock+10000).toISOString() };
+    assert.equal(activeSeason(cfg, clock-1), 'default');
+    assert.equal(activeSeason(cfg, clock), season);
+    assert.equal(activeSeason(cfg, clock+9999), season);
+    assert.equal(activeSeason(cfg, clock+10000), 'default');
+    if (season !== 'default') assert.ok(designs[season].headline && designs[season].motif);
+  }
+  const brandInput = { storeName: 'Season test', primaryColor: '', accentColor: '', seasonalTheme: 'winter', minimumAge: 21, themeIntensity: 'celebration', themeMotion: false, themeHeadline: 'Custom winter', themeSubtitle: 'A custom description', themeAnnouncement: 'Our winter event', themeCountdownAt: '2030-01-01T01:00:00Z', themeStartsAt: '2030-01-01T00:00:00Z', themeEndsAt: '2030-01-02T00:00:00Z' };
+  await call(settings, { section: 'brand', settings: brandInput });
+  const scheduled = storefront.outputSchema.parse(await call(storefront, {}));
+  assert.equal(scheduled.theme.seasonal, 'default');
+  assert.equal(scheduled.theme.configuredSeasonal, 'winter');
+  assert.equal(scheduled.theme.headline, brandInput.themeHeadline);
+  assert.equal(scheduled.theme.intensity, 'celebration');
+  assert.equal(scheduled.theme.motion, false);
+  const reloaded = await call(settings, { section: 'brand' });
+  assert.equal(reloaded.settings.themeCountdownAt, brandInput.themeCountdownAt);
+  await assert.rejects(() => call(settings, { section: 'brand', settings: { ...brandInput, themeEndsAt: '2029-01-01T00:00:00Z' } }), /schedule/);
+  await call(settings, { section: 'brand', settings: { ...brandInput, themeStartsAt: '', themeEndsAt: '' } });
+  assert.equal((await call(storefront, {})).theme.seasonal, 'winter');
   assert.equal(settings.inputSchema.safeParse({ section: 'brand', settings: { storeName: 'Test', primaryColor: '', accentColor: '', seasonalTheme: 'unknown', minimumAge: 19 } }).success, false);
   await assert.rejects(() => call(settings, { section: 'policies', settings: { termsOfService: '[COMPLETE: business]', privacyPolicy: '', shippingPolicy: '', refundPolicy: '' } }), /Complete|Incomplete/);
   const date = new Date(Date.now() + 7 * 86400000).toISOString();

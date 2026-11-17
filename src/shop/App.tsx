@@ -1,3 +1,4 @@
+import './seasonal.css';
 import { ReactNode, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -7,6 +8,9 @@ import { CartProvider, useCart } from './lib/cart';
 import { useStorefront } from './lib/store';
 import Header from './components/Header';
 import ResearchGate from './components/ResearchGate';
+import { SeasonProvider } from './components/seasonal/SeasonProvider';
+import { SeasonalMotionControl } from './components/seasonal/SeasonalExperience';
+import ThemePreview from './pages/ThemePreview';
 import ThemeColors from './components/ThemeColors';
 import Shop from './pages/Shop';
 import ProductPage from './pages/ProductPage';
@@ -46,6 +50,7 @@ function Footer() {
         {POLICIES.map((policy) => <Link key={policy.slug} to={`/policies/${policy.slug}`} className="hover:text-foreground">{policy.title}</Link>)}
         <Link to="/support" className="hover:text-foreground">Support</Link>
       </nav>
+      <SeasonalMotionControl />
       <p>© {new Date().getFullYear()} {data?.storeName || 'PinLabs'} · All products are sold strictly for laboratory research use. Not for human consumption.</p>
     </footer>
   );
@@ -57,7 +62,7 @@ export default function App() {
       <CartProvider>
         <CartCatalogSync />
         <BrowserRouter>
-          <div className="min-h-screen flex flex-col">
+          {window.location.pathname === '/theme-preview' ? <ThemePreview/> : <SeasonProvider><div className="storefront min-h-screen flex flex-col">
             <ThemeColors />
             <ResearchGate>
             <Header />
@@ -78,7 +83,7 @@ export default function App() {
             </main>
             <Footer />
             </ResearchGate>
-          </div>
+          </div></SeasonProvider>}
           <Toaster />
         </BrowserRouter>
       </CartProvider>

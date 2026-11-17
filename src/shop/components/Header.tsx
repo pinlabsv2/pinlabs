@@ -7,6 +7,7 @@ import {
 } from '@/ui-kit/ui/dropdown-menu';
 import { useCart } from '../lib/cart';
 import { useStorefront } from '../lib/store';
+import { SeasonalNavDecor } from './seasonal/SeasonalExperience';
 import PromoBanner from './PromoBanner';
 
 export default function Header() {
@@ -17,6 +18,7 @@ export default function Header() {
   return (
     <header className="sticky top-0 z-40 bg-background/85 backdrop-blur border-b">
       <PromoBanner />
+      <SeasonalNavDecor />
       <div className="container mx-auto px-4 h-16 flex items-center gap-6">
         <Link to="/" className="flex items-center gap-2 font-bold text-lg tracking-tight">
           <span className="grid place-items-center size-8 rounded-lg bg-primary text-primary-foreground">

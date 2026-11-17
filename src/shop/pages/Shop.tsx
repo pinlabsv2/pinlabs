@@ -4,12 +4,15 @@ import { Input } from '@/ui-kit/ui/input';
 import { Skeleton } from '@/ui-kit/ui/skeleton';
 import { cn } from '@/ui-kit/lib/utils';
 import ProductCard, { type Product } from '../components/ProductCard';
+import { useSeason } from '../components/seasonal/SeasonProvider';
+import { SeasonalHero, SeasonalDivider, SeasonalEmpty } from '../components/seasonal/SeasonalExperience';
 import { useStorefront } from '../lib/store';
 
 type ProductGroup = { key: string; category: string; divider: string; products: Product[] };
 
 export default function Shop() {
   const { data, isLoading } = useStorefront();
+  const { design } = useSeason();
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState('All');
   const [sort, setSort] = useState<'best' | 'name' | 'low' | 'high'>('best');
@@ -46,7 +49,7 @@ export default function Shop() {
   }, [data, query, category, sort]);
 
   return <div>
-    <section className="border-b bg-background">
+    {design ? <SeasonalHero/> : <section className="border-b bg-background">
       <div className="container mx-auto px-4 py-14 md:py-20 grid md:grid-cols-[1.4fr_1fr] gap-10 items-center">
         <div>
           <p className="font-mono text-xs uppercase tracking-widest text-foreground mb-4">HPLC-verified · Paid in crypto · Tracked to your door</p>
@@ -58,9 +61,9 @@ export default function Shop() {
           {[[Microscope, '≥99% HPLC purity', 'Third-party tested'], [ShieldCheck, 'Crypto checkout', 'BTC, ETH, SOL, USDT & more'], [Truck, 'Tracked shipping', 'Live 17TRACK updates']].map(([Icon, title, subtitle]: any) => <div key={title} className="flex items-center gap-3 border bg-card p-3"><Icon className="size-5 text-foreground shrink-0" /><div className="min-w-0"><p className="text-sm font-medium truncate">{title}</p><p className="text-xs text-muted-foreground truncate hidden sm:block">{subtitle}</p></div></div>)}
         </div>
       </div>
-    </section>
+    </section>}
 
-    <section className="container mx-auto px-4 py-10">
+    <section id="catalog" className="container mx-auto px-4 py-10">
       <div className="flex flex-col md:flex-row gap-3 md:items-center mb-8">
         <div className="flex gap-1.5 flex-wrap">
           <button onClick={() => setCategory('All')} className={cn('px-3.5 py-1.5 text-sm border transition', category === 'All' ? 'bg-foreground text-background border-foreground' : 'hover:bg-muted')}>All</button>
@@ -74,10 +77,11 @@ export default function Shop() {
         </div>
       </div>
       {isLoading ? <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">{Array.from({ length: 8 }).map((_, index) => <Skeleton key={index} className="h-72" />)}</div>
-        : groups.length === 0 ? <p className="text-center text-muted-foreground py-20">No products match your search.</p>
+        : groups.length === 0 ? <div className="text-center text-muted-foreground py-12"><SeasonalEmpty kind="search"/><p>No products match your search.</p></div>
         : <div className="space-y-10">{groups.map((group, index) => {
           const showCategory = index === 0 || groups[index - 1].category !== group.category;
-          return <section key={group.key} className="space-y-4">
+          return <section key={group.key} className="season-product-group space-y-4">
+            {showCategory && <SeasonalDivider/>}
             {showCategory && <h2 className="text-2xl font-semibold lowercase">{group.category}</h2>}
             {group.divider && <div className="flex items-center gap-3" aria-label={`${group.divider} section`}><span className="size-2.5 shrink-0 bg-foreground" /><h3 className="text-sm font-medium">{group.divider}</h3><span className="h-px flex-1 bg-border" /></div>}
             <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">{group.products.map((product) => <ProductCard key={product.id} p={product} />)}</div>

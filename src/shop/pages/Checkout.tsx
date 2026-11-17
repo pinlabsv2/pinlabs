@@ -11,6 +11,7 @@ import { Label } from '@/ui-kit/ui/label';
 import AddressFields, { Address } from '../components/AddressFields';
 import PaymentMethodPicker from '../components/PaymentMethodPicker';
 import { cartLineKey, useCart } from '../lib/cart';
+import { SeasonalCheckoutAccent } from '../components/seasonal/SeasonalExperience';
 import { usd, useStorefront } from '../lib/store';
 
 const schema = z.object({
@@ -124,6 +125,7 @@ export default function Checkout() {
   return <div className="container mx-auto px-4 py-10 grid lg:grid-cols-[1fr_360px] gap-8">
     <div className="space-y-8">
       <h1 className="text-2xl font-bold">Checkout</h1>
+      <SeasonalCheckoutAccent/>
       <label className="flex gap-3 border p-4 text-sm"><input type="checkbox" checked={researchAccepted} onChange={(e) => setResearchAccepted(e.target.checked)} /><span>I am {data?.minimumAge ?? 18}+ (or the higher age required locally), qualified to handle these materials, and buying exclusively for lawful laboratory research, never human or veterinary use.</span></label>
       {lines.some((line) => line.preorderEnabled) && <section className="border p-4 space-y-3 text-sm"><h2>preorder dispatch dates</h2>{lines.filter((line) => line.preorderEnabled).map((line) => <p key={cartLineKey(line)}>{line.name} · {line.preorderExpectedShipAt ? new Date(line.preorderExpectedShipAt).toLocaleDateString() : 'pending'}</p>)}<label className="flex gap-3"><input type="checkbox" checked={preorderAccepted} onChange={(e) => setPreorderAccepted(e.target.checked)} /><span>I understand these items are preorders, pay in full now, and accept the listed expected dispatch dates. Contact support if a date is missed; statutory cancellation and refund rights remain.</span></label></section>}
       <section className="space-y-4">

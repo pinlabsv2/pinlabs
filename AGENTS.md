@@ -183,3 +183,7 @@ db.sql({ query: 'SELECT … FROM "Orders" WHERE "status" = $1', params: ['Shippe
 - The frontend uses React Query (`useQuery(['key'], () => endpoint({...}))`) and `sonner` toasts.
 - Imports: `@/` resolves to `src/`. Server code uses relative imports only, so Vercel bundles it without path aliases.
 - Before shipping changes, run `npm run typecheck` and `npm run build`.
+
+## User workflow preferences
+- After completing and verifying requested improvements in this repository, run `git add .`, create a descriptive commit, and `git push` as the final step unless the user says otherwise. Never commit secrets or unrelated private files.
+- Do not create ZIP exports unless explicitly requested for the current task.

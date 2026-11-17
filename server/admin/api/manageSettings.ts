@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { createEndpoint, AppError } from '../../core/endpoint.js';
+import { seasons, intensities, seasonalDefaults } from '../../../shared/seasonal.js';
 import { db } from '../../core/db.js';
 
 const optionalEmail = z.string().trim().max(320).refine((value) => !value || z.string().email().safeParse(value).success, 'Enter a valid email address');
@@ -25,8 +26,17 @@ const policiesSchema = z.object({
   shippingPolicy: z.string().max(100_000),
   refundPolicy: z.string().max(100_000),
 });
+const optionalDate = z.string().refine((v) => !v || z.string().datetime().safeParse(v).success, 'Use a valid date and time');
 const brandSchema = z.object({
-  seasonalTheme: z.enum(['default','summer','winter','fall','spring','halloween','black-friday','christmas','new-year','valentines','easter']).default('default'),
+  themeIntensity: z.enum(intensities).default('balanced'),
+  themeMotion: z.boolean().default(true),
+  themeHeadline: z.string().trim().max(120).default(''),
+  themeSubtitle: z.string().trim().max(300).default(''),
+  themeAnnouncement: z.string().trim().max(180).default(''),
+  themeStartsAt: optionalDate.default(''),
+  themeEndsAt: optionalDate.default(''),
+  themeCountdownAt: optionalDate.default(''),
+  seasonalTheme: z.enum(seasons).default('default'),
   minimumAge: z.union([z.literal(18), z.literal(21)]).default(18),
   storeName: z.string().trim().min(1).max(120),
   primaryColor: optionalHex,
@@ -56,7 +66,7 @@ const defaults = {
   },
   email: { adminEmail: '' },
   policies: { termsOfService: '', privacyPolicy: '', shippingPolicy: '', refundPolicy: '' },
-  brand: { seasonalTheme: 'default', minimumAge: 18, storeName: 'PinLabs', primaryColor: '', accentColor: '' },
+  brand: { ...seasonalDefaults, minimumAge: 18, storeName: 'PinLabs', primaryColor: '', accentColor: '' },
   promotions: { promoActive: false, promoTitle: '', promoSubtitle: '', promoCode: '' },
 } as const;
 
@@ -75,6 +85,7 @@ export default createEndpoint({
   inputSchema,
   execute: async ({ input, context }) => {
     if (input.section === 'policies' && input.settings && Object.values(input.settings).some((value) => value.includes('[COMPLETE:'))) throw new AppError({ code: 'BAD_REQUEST', message: 'Incomplete policy template', userFacingMessage: 'Complete every marked policy detail before publishing.' });
+    if (input.section === 'brand' && input.settings?.themeStartsAt && input.settings?.themeEndsAt && Date.parse(input.settings.themeEndsAt) <= Date.parse(input.settings.themeStartsAt)) throw new AppError({ code: 'BAD_REQUEST', message: 'Invalid theme schedule', userFacingMessage: 'Theme end must be after its start.' });
     if (input.settings) {
       await db.transaction(async (tx) => {
         let { rows } = await tx.query(`SELECT * FROM "StoreSettings" ORDER BY "createdAt" LIMIT 1 FOR UPDATE`);

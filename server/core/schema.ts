@@ -28,7 +28,7 @@ export const TABLES: Record<string, Record<string, Col>> = {
     storeName: 'text', solAddress: 'text', ltcAddress: 'text', shippingFee: 'double precision', freeShippingOver: 'double precision',
     promoActive: 'boolean', promoTitle: 'text', promoSubtitle: 'text', promoCode: 'text', adminEmail: 'text', btcAddress: 'text',
     ethAddress: 'text', tronAddress: 'text', testMode: 'boolean', termsOfService: 'text', privacyPolicy: 'text', shippingPolicy: 'text',
-    refundPolicy: 'text', seasonalTheme: 'text', minimumAge: 'integer', primaryColor: 'text', accentColor: 'text', etherscanApiKey: 'text', tronGridApiKey: 'text', solanaRpcUrl: 'text',
+    refundPolicy: 'text', themeIntensity: 'text', themeMotion: 'boolean', themeHeadline: 'text', themeSubtitle: 'text', themeAnnouncement: 'text', themeStartsAt: 'text', themeEndsAt: 'text', themeCountdownAt: 'text', seasonalTheme: 'text', minimumAge: 'integer', primaryColor: 'text', accentColor: 'text', etherscanApiKey: 'text', tronGridApiKey: 'text', solanaRpcUrl: 'text',
   },
   Orders: {
     researchAcceptedAt: 'timestamptz', acceptedMinimumAge: 'integer',

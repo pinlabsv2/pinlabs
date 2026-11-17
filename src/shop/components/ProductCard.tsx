@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { Button } from '@/ui-kit/ui/button';
 import type { GetStorefrontOutputType } from '@/lib/api';
 import { useCart } from '../lib/cart';
+import { SeasonalCardDecoration } from './seasonal/SeasonalExperience';
 import { usd } from '../lib/store';
 
 export type Product = GetStorefrontOutputType['products'][0];
@@ -31,8 +32,9 @@ export function ProductImage({ p, className = '' }: { p: Product; className?: st
 export default function ProductCard({ p }: { p: Product }) {
   const { add } = useCart();
   const unavailable = !p.purchasable;
-  return <article className="group border bg-card overflow-hidden flex flex-col">
-    <Link to={`/product/${p.id}`} className="block relative">
+  return <article className="season-product-card group border bg-card overflow-hidden flex flex-col">
+    <Link to={`/product/${p.id}`} className="season-product-image block relative">
+      <SeasonalCardDecoration/>
       <ProductImage p={p} className="aspect-[4/3] w-full group-hover:scale-[1.02] transition-transform" />
       {!p.hasVariants && p.salePrice != null && <span className="absolute top-3 right-3 bg-promo text-promo-foreground text-xs px-2 py-0.5 font-mono font-semibold">SALE</span>}
       {p.featured && <span className="absolute top-3 left-3 bg-promo text-promo-foreground text-xs px-2 py-0.5 font-medium">Featured</span>}

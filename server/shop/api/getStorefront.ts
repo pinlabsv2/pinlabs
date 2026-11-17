@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { createEndpoint } from '../../core/endpoint.js';
 import { db } from '../../core/db.js';
+import { activeSeason, seasons, seasonalDefaults, type Season } from '../../../shared/seasonal.js';
 import { getSettings } from '../lib/server/store.js';
 import { CURRENCIES, META, walletFor } from '../lib/server/crypto.js';
 
@@ -32,7 +33,7 @@ export default createEndpoint({
     storeName: z.string(), paymentMethods: z.array(z.object({ code: z.string(), network: z.string() })), testMode: z.boolean(),
     support: z.array(z.object({ label: z.string(), channel: z.string(), handle: z.string() })),
     minimumAge: z.number(),
-    theme: z.object({ primary: z.string(), accent: z.string(), seasonal: z.string() }),
+    theme: z.object({ primary: z.string(), accent: z.string(), seasonal: z.string(), configuredSeasonal: z.string(), intensity: z.string(), motion: z.boolean(), headline: z.string(), subtitle: z.string(), announcement: z.string(), startsAt: z.string(), endsAt: z.string(), countdownAt: z.string(), serverTime: z.string() }),
     policies: z.object({ terms: z.string(), privacy: z.string(), shipping: z.string(), refund: z.string() }),
   }),
   execute: async () => {
@@ -135,6 +136,7 @@ export default createEndpoint({
       categoryDividers.push({ id: divider.id, name: divider.name ?? '', sortOrder: divider.sortOrder ?? 0 });
       dividersByCategory.set(categoryId, categoryDividers);
     }
+    const themeConfig = { ...seasonalDefaults, seasonalTheme: seasons.includes(settings?.seasonalTheme as Season) ? settings!.seasonalTheme as Season : 'default' as const, themeStartsAt: settings?.themeStartsAt ?? '', themeEndsAt: settings?.themeEndsAt ?? '' };
     return {
       products,
       categories: cats.records.map((category) => ({
@@ -147,7 +149,7 @@ export default createEndpoint({
       testMode: !!settings?.testMode,
       support: support.records.map((contact) => ({ label: contact.label ?? '', channel: contact.channel ?? 'Email', handle: contact.handle ?? '' })),
       minimumAge: settings?.minimumAge === 21 ? 21 : 18,
-      theme: { primary: settings?.primaryColor ?? '', accent: settings?.accentColor ?? '', seasonal: settings?.seasonalTheme ?? 'default' },
+      theme: { primary: settings?.primaryColor ?? '', accent: settings?.accentColor ?? '', seasonal: activeSeason(themeConfig, Date.now()), configuredSeasonal: themeConfig.seasonalTheme, intensity: settings?.themeIntensity ?? 'balanced', motion: settings?.themeMotion !== false, headline: settings?.themeHeadline ?? '', subtitle: settings?.themeSubtitle ?? '', announcement: settings?.themeAnnouncement ?? '', startsAt: themeConfig.themeStartsAt, endsAt: themeConfig.themeEndsAt, countdownAt: settings?.themeCountdownAt ?? '', serverTime: new Date().toISOString() },
       policies: { terms: settings?.termsOfService ?? '', privacy: settings?.privacyPolicy ?? '', shipping: settings?.shippingPolicy ?? '', refund: settings?.refundPolicy ?? '' },
     };
   },

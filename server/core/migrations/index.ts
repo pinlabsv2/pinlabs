@@ -574,7 +574,21 @@ const seasonalPreorder: Migration = {
     ]);
   },
 };
-const migrations: Migration[] = [constraints, backfill, catalogShipping, emailMarketing, seasonalPreorder];
+const themeExperience: Migration = {
+  version: '006-seasonal-experience',
+  up: async (tx) => {
+    await tx.query(`ALTER TABLE "StoreSettings"
+      ADD COLUMN IF NOT EXISTS "themeIntensity" text DEFAULT 'balanced',
+      ADD COLUMN IF NOT EXISTS "themeMotion" boolean DEFAULT true,
+      ADD COLUMN IF NOT EXISTS "themeHeadline" text,
+      ADD COLUMN IF NOT EXISTS "themeSubtitle" text,
+      ADD COLUMN IF NOT EXISTS "themeAnnouncement" text,
+      ADD COLUMN IF NOT EXISTS "themeStartsAt" text,
+      ADD COLUMN IF NOT EXISTS "themeEndsAt" text,
+      ADD COLUMN IF NOT EXISTS "themeCountdownAt" text`);
+  },
+};
+const migrations: Migration[] = [constraints, backfill, catalogShipping, emailMarketing, seasonalPreorder, themeExperience];
 
 export async function runMigrations(db: Queryable) {
   await db.query(`CREATE TABLE IF NOT EXISTS "SchemaMigrations" (

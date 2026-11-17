@@ -3,6 +3,7 @@ import { Minus, Plus, Trash2, ShoppingBag } from 'lucide-react';
 import { useAuth, loginWithRedirect } from '@/lib/auth';
 import { Button } from '@/ui-kit/ui/button';
 import { cartLineKey, useCart } from '../lib/cart';
+import { SeasonalEmpty, SeasonalCheckoutAccent } from '../components/seasonal/SeasonalExperience';
 import { usd } from '../lib/store';
 
 export default function CartPage() {
@@ -14,7 +15,7 @@ export default function CartPage() {
   const shipping = shippingOptions.reduce((sum, option) => sum + option.price, 0);
 
   if (lines.length === 0) return <div className="container mx-auto px-4 py-24 text-center">
-    <ShoppingBag className="size-10 mx-auto text-muted-foreground" />
+    <SeasonalEmpty/><ShoppingBag className="size-10 mx-auto text-muted-foreground" />
     <p className="mt-4 text-lg font-medium">Your cart is empty</p>
     <Button asChild className="mt-6"><Link to="/">Browse products</Link></Button>
   </div>;
@@ -42,6 +43,7 @@ export default function CartPage() {
       </div>
     </div>
     <aside className="border bg-card p-5 h-fit lg:mt-14 space-y-3">
+      <SeasonalCheckoutAccent/>
       <div className="flex justify-between text-sm"><span>Subtotal</span><span className="font-mono">{usd(subtotal)}</span></div>
       {shippingOptions.map((option) => <div key={option.id} className="flex justify-between gap-3 text-sm"><span className="truncate">Shipping · {option.name}</span><span className="font-mono">{option.price === 0 ? 'Free' : usd(option.price)}</span></div>)}
       <div className="flex justify-between border-t pt-3 font-medium"><span>Before discounts</span><span className="font-mono">{usd(subtotal + shipping)}</span></div>

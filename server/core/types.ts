@@ -165,6 +165,7 @@ export type StoreSettingsRecordType = {
   privacyPolicy?: string;
   shippingPolicy?: string;
   refundPolicy?: string;
+  themeIntensity?: string; themeMotion?: boolean; themeHeadline?: string; themeSubtitle?: string; themeAnnouncement?: string; themeStartsAt?: string; themeEndsAt?: string; themeCountdownAt?: string;
   seasonalTheme?: string;
   minimumAge?: number;
   primaryColor?: string;
@@ -194,6 +195,7 @@ export type StoreSettingsRecordInput = {
   privacyPolicy: string | null;
   shippingPolicy: string | null;
   refundPolicy: string | null;
+  themeIntensity: string | null; themeMotion: boolean | null; themeHeadline: string | null; themeSubtitle: string | null; themeAnnouncement: string | null; themeStartsAt: string | null; themeEndsAt: string | null; themeCountdownAt: string | null;
   seasonalTheme: string | null;
   minimumAge: number | null;
   primaryColor: string | null;
