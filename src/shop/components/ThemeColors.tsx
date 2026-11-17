@@ -1,4 +1,4 @@
-import { hexToHsl, readableForeground } from '../../../shared/themeColor';
+import { hexToHsl, readableForeground, coloredBlackTokens } from '../../../shared/themeColor';
 import { useEffect } from 'react';
 import { useSeason } from './seasonal/SeasonProvider';
 import { MotifScatter } from './seasonal/SeasonalArt';
@@ -19,6 +19,7 @@ export default function ThemeColors() {
       if (!previous.has(key)) previous.set(key, root.style.getPropertyValue(key));
       root.style.setProperty(key, value);
     };
+    if (season === 'colored-black') Object.entries(coloredBlackTokens).forEach(([key,value]) => set(key,value));
     if (design) {
       set('--background', design.paper); set('--card', design.card); set('--popover', design.card);
       for (const key of ['--foreground','--card-foreground','--popover-foreground','--secondary-foreground']) set(key, design.ink);
@@ -27,15 +28,15 @@ export default function ThemeColors() {
       set('--border', design.border); set('--input', design.border);
     }
     const p = hexToHsl(config.primary), a = hexToHsl(config.accent);
-    const primary = p ? `${p[0]} ${p[1]}% ${p[2]}%` : design?.primary;
-    const accent = a ? `${a[0]} ${a[1]}% ${a[2]}%` : design?.accent;
+    const primary = p ? `${p[0]} ${p[1]}% ${p[2]}%` : design?.primary ?? (season === 'colored-black' ? coloredBlackTokens['--primary'] : undefined);
+    const accent = a ? `${a[0]} ${a[1]}% ${a[2]}%` : design?.accent ?? (season === 'colored-black' ? coloredBlackTokens['--accent'] : undefined);
     if (primary) {
       for (const key of ['--primary','--ring','--sidebar-primary','--sidebar-ring','--chart-1']) set(key, primary);
-      for (const key of ['--primary-foreground','--sidebar-primary-foreground']) set(key, p ? readableForeground(config.primary) : '0 0% 100%');
+      for (const key of ['--primary-foreground','--sidebar-primary-foreground']) set(key, p ? readableForeground(config.primary) : season === 'colored-black' ? coloredBlackTokens['--primary-foreground'] : '0 0% 100%');
     }
     if (accent) {
       for (const key of ['--accent','--sidebar-accent','--chart-2','--promo']) set(key, accent);
-      for (const key of ['--accent-foreground','--sidebar-accent-foreground','--promo-foreground']) set(key, a ? readableForeground(config.accent) : '0 0% 100%');
+      for (const key of ['--accent-foreground','--sidebar-accent-foreground','--promo-foreground']) set(key, a ? readableForeground(config.accent) : season === 'colored-black' ? coloredBlackTokens['--accent-foreground'] : '0 0% 100%');
     }
     return () => {
       previous.forEach((value,key)=>value ? root.style.setProperty(key,value) : root.style.removeProperty(key));

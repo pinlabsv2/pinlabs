@@ -21,3 +21,19 @@ export function readableForeground(hex: string): string {
   const luminance = channels[0]*.2126+channels[1]*.7152+channels[2]*.0722;
   return (luminance+.05)/.05 >= 1.05/(luminance+.05) ? '0 0% 0%' : '0 0% 100%';
 }
+
+/** Palette-only edition. Neutral warm charcoal and paper text; categories supply the color. */
+export const coloredBlackTokens: Record<string, string> = {
+  '--background': '60 3% 7%', '--foreground': '50 10% 83%',
+  '--card': '60 6% 11%', '--card-foreground': '50 10% 83%',
+  '--popover': '60 5% 12%', '--popover-foreground': '50 10% 83%',
+  '--primary': '50 10% 83%', '--primary-foreground': '60 3% 7%',
+  '--accent': '60 5% 19%', '--accent-foreground': '50 10% 87%',
+  '--secondary': '60 5% 15%', '--secondary-foreground': '50 10% 83%',
+  '--muted': '60 5% 14%', '--muted-foreground': '45 5% 63%',
+  '--border': '60 4% 21%', '--input': '60 4% 40%', '--ring': '50 10% 74%',
+  '--grey': '45 5% 63%', '--grey-2': '45 5% 57%',
+  '--destructive': '0 78% 68%', '--destructive-foreground': '60 3% 7%',
+  '--sidebar-background': '60 3% 7%', '--sidebar-foreground': '50 10% 83%',
+  '--sidebar-border': '60 4% 21%',
+};

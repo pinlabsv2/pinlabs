@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { ManageSettingsOutputType } from '@/lib/api';
+import { useQuery } from '@tanstack/react-query';
+import { manageCategories, type ManageSettingsOutputType } from '@/lib/api';
 import { Button } from '@/ui-kit/ui/button';
 type BrandSettings = Extract<ManageSettingsOutputType, { section: 'brand' }>['settings'];
 export default function SeasonPreviewFrame({ settings }: { settings: BrandSettings }) {
+  const { data: categories } = useQuery({queryKey:['categories'],queryFn:()=>manageCategories({action:'list'})});
   const frame = useRef<HTMLIFrameElement>(null);
   const [viewport, setViewport] = useState<'desktop' | 'mobile'>('desktop');
-  const send = useCallback(() => frame.current?.contentWindow?.postMessage({ type: 'pinlabs-theme-preview', config: { ...settings, primary: settings.primaryColor, accent: settings.accentColor } }, window.location.origin), [settings]);
+  const send = useCallback(() => frame.current?.contentWindow?.postMessage({ type: 'pinlabs-theme-preview', config: { ...settings, categoryColors: categories?.categories.map(({name,color})=>({name,color})), primary: settings.primaryColor, accent: settings.accentColor } }, window.location.origin), [settings,categories]);
   useEffect(() => {
     send();
     const ready = (event: MessageEvent) => { if (event.origin === window.location.origin && event.source === frame.current?.contentWindow && event.data?.type === 'pinlabs-theme-preview-ready') send(); };

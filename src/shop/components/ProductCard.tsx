@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { Button } from '@/ui-kit/ui/button';
 import type { GetStorefrontOutputType } from '@/lib/api';
 import { useCart } from '../lib/cart';
+import { useSeason } from './seasonal/SeasonProvider';
 import { SeasonalCardDecoration } from './seasonal/SeasonalExperience';
 import { usd } from '../lib/store';
 
@@ -32,7 +33,8 @@ export function ProductImage({ p, className = '' }: { p: Product; className?: st
 export default function ProductCard({ p }: { p: Product }) {
   const { add } = useCart();
   const unavailable = !p.purchasable;
-  return <article className="season-product-card group border bg-card overflow-hidden flex flex-col">
+  const coloredBlack = useSeason().season === 'colored-black';
+  return <article className={`season-product-card group border bg-card overflow-hidden flex flex-col ${coloredBlack ? 'category-color-product' : ''}`}>
     <Link to={`/product/${p.id}`} className="season-product-image block relative">
       <SeasonalCardDecoration/>
       <ProductImage p={p} className="aspect-[4/3] w-full group-hover:scale-[1.02] transition-transform" />
@@ -43,7 +45,7 @@ export default function ProductCard({ p }: { p: Product }) {
       <div className="flex items-center gap-2 text-xs font-mono text-muted-foreground">
         <span>{p.hasVariants ? `${p.variants.length} variants` : p.size}</span>{p.purity && <><span>·</span><span>{p.purity} purity</span></>}
       </div>
-      <Link to={`/product/${p.id}`} className="font-semibold leading-tight hover:text-primary">{p.name}</Link>
+      <Link to={`/product/${p.id}`} className="font-semibold leading-tight hover:text-primary">{coloredBlack && <span className="category-color-swatch" aria-hidden="true"/>}{p.name}</Link>
       {p.shippingOption && <p className="text-xs text-muted-foreground">Ships from {p.shippingOption.name}</p>}
       {p.hasVariants && p.shippingScope === 'variant' && <p className="text-xs text-muted-foreground">Origin shown with each variant</p>}
       {(p.preorderEnabled || p.variants.some((v) => v.preorderEnabled)) && <p className="text-xs font-medium text-primary">{p.hasVariants ? 'Preorder options available' : `Preorder · dispatch ${p.preorderExpectedShipAt ? new Date(p.preorderExpectedShipAt).toLocaleDateString() : 'pending'}`}</p>}

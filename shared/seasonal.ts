@@ -1,7 +1,7 @@
 /** Pure shared configuration: safe in both the API and browser. */
-export const seasons = ['default', 'summer', 'winter', 'fall', 'spring', 'halloween', 'black-friday', 'christmas', 'new-year', 'valentines', 'easter', 'anniversary'] as const;
+export const seasons = ['default', 'colored-black', 'summer', 'winter', 'fall', 'spring', 'halloween', 'black-friday', 'christmas', 'new-year', 'valentines', 'easter', 'anniversary'] as const;
 export type Season = typeof seasons[number];
-export const seasonLabels: Record<Season, string> = { default: 'Original', summer: 'Summer', winter: 'Winter', fall: 'Fall', spring: 'Spring', halloween: 'Halloween', 'black-friday': 'Black Friday', christmas: 'Christmas', 'new-year': 'New Year', valentines: 'Valentine’s Day', easter: 'Easter', anniversary: 'Store anniversary' };
+export const seasonLabels: Record<Season, string> = { default: 'Original', 'colored-black': 'Colored Black', summer: 'Summer', winter: 'Winter', fall: 'Fall', spring: 'Spring', halloween: 'Halloween', 'black-friday': 'Black Friday', christmas: 'Christmas', 'new-year': 'New Year', valentines: 'Valentine’s Day', easter: 'Easter', anniversary: 'Store anniversary' };
 export const intensities = ['subtle', 'balanced', 'celebration'] as const;
 export type Intensity = typeof intensities[number];
 export type SeasonalConfig = {
@@ -25,7 +25,7 @@ export type SeasonDesign = {
   primary: string; accent: string; paper: string; card: string; ink: string; muted: string; border: string;
   glyph: string; motif: string; eyebrow: string; headline: string; subtitle: string; announcement: string; caption: string;
 };
-export const designs: Record<Exclude<Season, 'default'>, SeasonDesign> = {
+export const designs: Record<Exclude<Season, 'default' | 'colored-black'>, SeasonDesign> = {
   summer: { primary: '23 85% 33%', accent: '174 68% 26%', paper: '46 100% 97%', card: '45 90% 99%', ink: '180 45% 12%', muted: '175 18% 32%', border: '40 45% 75%', glyph: '✺', motif: 'sun', eyebrow: 'the summer collection', headline: 'a brighter season\nfor discovery.', subtitle: 'A new perspective, the same research standards. Explore the laboratory collection in full summer colour.', announcement: 'Summer at the lab', caption: 'sunlit horizons · precise research' },
   winter: { primary: '213 74% 33%', accent: '192 73% 25%', paper: '210 65% 97%', card: '210 80% 99%', ink: '215 45% 14%', muted: '214 22% 34%', border: '210 35% 77%', glyph: '❄', motif: 'snowflake', eyebrow: 'the winter collection', headline: 'clear thinking.\nnew horizons.', subtitle: 'A quiet season for focused research. Discover the collection beneath an alpine sky.', announcement: 'Winter research collection', caption: 'alpine skies · fresh perspectives' },
   fall: { primary: '20 74% 31%', accent: '40 71% 28%', paper: '35 65% 95%', card: '38 75% 98%', ink: '23 40% 14%', muted: '26 20% 32%', border: '29 35% 72%', glyph: '❧', motif: 'leaf', eyebrow: 'the autumn collection', headline: 'a new chapter\nin the making.', subtitle: 'Warm copper, crisp mornings, and room for your next research question.', announcement: 'A new season of discovery', caption: 'copper leaves · considered research' },

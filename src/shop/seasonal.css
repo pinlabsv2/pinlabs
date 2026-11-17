@@ -1,6 +1,6 @@
 /* Seasonal presentation is scoped to the storefront document. Original remains unchanged. */
-html[data-season]:not([data-season="default"]) { --season-line: hsl(var(--primary) / .18); --season-wash: hsl(var(--primary) / .045); }
-html[data-season]:not([data-season="default"]) body { background-image: radial-gradient(ellipse at 0% 0%, var(--season-wash), transparent 65%); }
+html[data-season]:not([data-season="default"]):not([data-season="colored-black"]) { --season-line: hsl(var(--primary) / .18); --season-wash: hsl(var(--primary) / .045); }
+html[data-season]:not([data-season="default"]):not([data-season="colored-black"]) body { background-image: radial-gradient(ellipse at 0% 0%, var(--season-wash), transparent 65%); }
 .season-hero { position: relative; overflow: hidden; isolation: isolate; background: linear-gradient(120deg,hsl(var(--background)),hsl(var(--primary) / .055)); }
 .season-hero::before { content: ''; position: absolute; inset: 0; pointer-events: none; z-index: -1; background-size: 26px 26px; opacity: .5; }
 .season-eyebrow { display: flex; flex-wrap: wrap; gap: .5rem; font: 10px var(--font-mono); text-transform: uppercase; letter-spacing: .13em; color: hsl(var(--muted-foreground)); }
@@ -18,8 +18,8 @@ html[data-season]:not([data-season="default"]) body { background-image: radial-g
 .season-announcement>svg { width: 18px; height: 18px; flex-shrink: 0; }
 .season-countdown { font: 11px var(--font-mono); font-variant-numeric: tabular-nums; padding-left: 1rem; border-left: 1px solid currentColor; }
 .season-nav-decor { height: 22px; position: relative; border-bottom: 1px solid var(--season-line); background: hsl(var(--card)); }
-html[data-season]:not([data-season="default"]) .season-product-card { position: relative; border-color: var(--season-line); background-image: linear-gradient(145deg,hsl(var(--card)),var(--season-wash)); transition: border-color .3s, transform .3s; }
-html[data-season]:not([data-season="default"]) .season-product-card:hover { border-color: hsl(var(--primary) / .6); transform: translateY(-3px); }
+html[data-season]:not([data-season="default"]):not([data-season="colored-black"]) .season-product-card { position: relative; border-color: var(--season-line); background-image: linear-gradient(145deg,hsl(var(--card)),var(--season-wash)); transition: border-color .3s, transform .3s; }
+html[data-season]:not([data-season="default"]):not([data-season="colored-black"]) .season-product-card:hover { border-color: hsl(var(--primary) / .6); transform: translateY(-3px); }
 .season-card-decoration { position: absolute; z-index: 2; width: 38px; right: 9px; bottom: 9px; color: hsl(var(--primary)); background: hsl(var(--card) / .94); padding: 5px; border: 1px solid var(--season-line); pointer-events: none; transition: transform .4s; }
 .season-product-card:hover .season-card-decoration { transform: rotate(12deg); }
 .season-section-rule { display: flex; align-items: center; gap: 1rem; color: hsl(var(--primary)); margin: 1rem 0 1.5rem; }
@@ -32,8 +32,8 @@ html[data-season]:not([data-season="default"]) .season-product-card:hover { bord
 .season-checkout-note { border-bottom: 1px solid var(--season-line); display: flex; gap: .75rem; align-items: center; padding-bottom: 1rem; color: hsl(var(--muted-foreground)); font-size: 11px; line-height: 1.8; }
 .season-checkout-note svg { width: 30px; height: 30px; flex-shrink: 0; color: hsl(var(--primary)); }
 .season-motion-control { font-size: 11px; line-height: 1.8; }
-html[data-season]:not([data-season="default"]) .storefront .bg-primary { position: relative; overflow: hidden; background-image: linear-gradient(110deg,transparent 30%,hsl(var(--primary-foreground) / .1) 50%,transparent 70%); background-size: 250% 100%; transition: background-position .6s; }
-html[data-season]:not([data-season="default"]) .storefront .bg-primary:hover { background-position: 100% 0; }
+html[data-season]:not([data-season="default"]):not([data-season="colored-black"]) .storefront .bg-primary { position: relative; overflow: hidden; background-image: linear-gradient(110deg,transparent 30%,hsl(var(--primary-foreground) / .1) 50%,transparent 70%); background-size: 250% 100%; transition: background-position .6s; }
+html[data-season]:not([data-season="default"]):not([data-season="colored-black"]) .storefront .bg-primary:hover { background-position: 100% 0; }
 /* Every edition has a distinct material, card treatment, heading style and scene. */
 html[data-season="summer"] .season-hero::before { background-image: repeating-linear-gradient(0deg,transparent 0 25px,hsl(var(--accent) / .1) 25px 26px); }
 html[data-season="summer"] .season-headline { font-style: italic; }
@@ -123,7 +123,15 @@ html[data-season-motion="off"] .season-product-card:hover .season-card-decoratio
 
 .season-vine { position:absolute;inset:0;width:100%;height:100%;color:hsl(var(--primary) / .35);pointer-events:none; }
 .season-web { position:absolute;left:0;top:0;width:85px;height:40px;color:hsl(var(--accent) / .5);pointer-events:none; }
-html[data-season]:not([data-season="default"]) .storefront main h1:not(.season-headline) { font-family:var(--font-serif);font-weight:400; }
+html[data-season]:not([data-season="default"]):not([data-season="colored-black"]) .storefront main h1:not(.season-headline) { font-family:var(--font-serif);font-weight:400; }
 html[data-season="black-friday"] .storefront main h1:not(.season-headline) { font-family:var(--font-sans);font-weight:700; }
 /* Keep real product labels readable above decorative gift ribbons. */
 .season-product-image>span { z-index:3; }
+
+/* Colored Black changes the normal storefront's colors only, with category accents. */
+html[data-season="colored-black"] { color-scheme:dark; }
+html[data-season="colored-black"] .category-color-chip { border-top:3px solid var(--category-color); }
+html[data-season="colored-black"] .category-color-swatch { display:inline-block;width:.65rem;height:.65rem;background:var(--category-color);flex-shrink:0;vertical-align:middle;margin-right:.6rem; }
+html[data-season="colored-black"] .season-product-group>.category-color-heading { border-top:4px solid var(--category-color);padding-top:.8rem; }
+html[data-season="colored-black"] .category-color-product { border-top:3px solid var(--category-color,hsl(var(--border))); }
+html[data-season="colored-black"] .category-color-divider { background:var(--category-color); }

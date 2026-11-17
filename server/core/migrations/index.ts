@@ -1,3 +1,4 @@
+import { categoryPalette } from '../../../shared/categoryColors.js';
 import type { QueryRunner, Queryable } from '../pg.js';
 
 type Migration = {
@@ -588,7 +589,15 @@ const themeExperience: Migration = {
       ADD COLUMN IF NOT EXISTS "themeCountdownAt" text`);
   },
 };
-const migrations: Migration[] = [constraints, backfill, catalogShipping, emailMarketing, seasonalPreorder, themeExperience];
+const categoryAccents: Migration = {
+  version: '007-colored-black-category-colors',
+  up: async (tx) => {
+    await tx.query(`ALTER TABLE "Categories" ADD COLUMN IF NOT EXISTS "color" text`);
+    const { rows } = await tx.query(`SELECT "id" FROM "Categories" ORDER BY COALESCE("sortOrder",0), lower(COALESCE("name",'')), "id"`);
+    for (let index=0;index<rows.length;index++) await tx.query(`UPDATE "Categories" SET "color"=$2 WHERE "id"=$1 AND "color" IS NULL`, [rows[index].id,categoryPalette[index%categoryPalette.length]]);
+  },
+};
+const migrations: Migration[] = [constraints, backfill, catalogShipping, emailMarketing, seasonalPreorder, themeExperience, categoryAccents];
 
 export async function runMigrations(db: Queryable) {
   await db.query(`CREATE TABLE IF NOT EXISTS "SchemaMigrations" (

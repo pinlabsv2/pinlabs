@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { createEndpoint, AppError } from '../../core/endpoint.js';
+import { categoryColor } from '../../../shared/categoryColors.js';
 import { db } from '../../core/db.js';
 
 const bad = (message: string) => new AppError({ code: 'BAD_REQUEST', message, userFacingMessage: message });
@@ -26,7 +27,8 @@ async function listCategories() {
     };
     byCategory.set(divider.categoryId, [...(byCategory.get(divider.categoryId) ?? []), divider]);
   }
-  return categories.map((category) => ({
+  return categories.map((category,index) => ({
+    color: categoryColor(category.color,index),
     id: String(category.id), name: String(category.name ?? ''), sortOrder: Number(category.sortOrder ?? 0),
     productCount: Number(category.productCount ?? 0), dividers: byCategory.get(String(category.id)) ?? [],
   }));
@@ -35,21 +37,23 @@ async function listCategories() {
 export default createEndpoint({
   description: 'Lists and manages product categories and their visual dividers',
   inputSchema: z.object({
-    action: z.enum(['list', 'save', 'delete', 'dividerSave', 'dividerDelete']),
+    action: z.enum(['list', 'save', 'delete', 'dividerSave', 'dividerDelete', 'colorSave']),
     id: z.string().optional(),
     categoryId: z.string().optional(),
+    color: z.string().trim().regex(/^#[0-9a-fA-F]{6}$/, 'Use a six-digit hex color').optional(),
     name: z.string().trim().max(160).optional(),
     sortOrder: z.number().int().min(0).optional(),
   }),
   outputSchema: z.object({
     categories: z.array(z.object({
-      id: z.string(), name: z.string(), sortOrder: z.number(), productCount: z.number(), dividers: z.array(dividerSchema),
+      id: z.string(), name: z.string(), color: z.string(), sortOrder: z.number(), productCount: z.number(), dividers: z.array(dividerSchema),
     })),
   }),
   execute: async ({ input }) => {
     if (input.action === 'save') {
       const name = input.name?.trim();
       if (!name) throw bad('Enter a category name.');
+      const savedId = input.id ?? crypto.randomUUID();
       await db.transaction(async (tx) => {
         const duplicate = await tx.query(
           `SELECT "id" FROM "Categories" WHERE lower("name") = lower($1) AND ($2::text IS NULL OR "id" <> $2) LIMIT 1`,
@@ -68,11 +72,18 @@ export default createEndpoint({
           }
         } else {
           await tx.query(
-            `INSERT INTO "Categories" ("id", "name", "sortOrder") VALUES ($1, $2, $3)`,
-            [crypto.randomUUID(), name, input.sortOrder ?? 99],
+            `INSERT INTO "Categories" ("id", "name", "sortOrder", "color") VALUES ($1, $2, $3, $4)`,
+            [savedId, name, input.sortOrder ?? 99, categoryColor(input.color, Number((await tx.query(`SELECT count(*)::int AS "count" FROM "Categories"`)).rows[0].count))],
           );
         }
+        if (input.color !== undefined) await tx.query(`UPDATE "Categories" SET "color"=$2, "updatedAt"=now() WHERE "id"=$1`, [input.id ?? savedId,input.color.toUpperCase()]);
       });
+    }
+
+    if (input.action === 'colorSave') {
+      if (!input.id || !input.color) throw bad('Choose a category and a six-digit hex color.');
+      const result = await db.sql({query:`UPDATE "Categories" SET "color"=$2, "updatedAt"=now() WHERE "id"=$1 RETURNING "id"`,params:[input.id,input.color.toUpperCase()]});
+      if (!result.rows[0]) throw bad('Category not found.');
     }
 
     if (input.action === 'delete') {

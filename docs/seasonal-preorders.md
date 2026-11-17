@@ -21,3 +21,11 @@ Use the live **Desktop / Mobile** preview to inspect unsaved drafts. Preview int
 Visitors can turn motion off in the footer. Device reduced-motion preferences and the store’s motion setting take precedence. The motion control supports keyboard, click and tap. Decorative layers do not intercept purchases or product selection, and ambient counts are bounded (6/14/26). Countdown updates are isolated from product-card rendering. No new image or animation service is required.
 
 Additional checks: `node tests/render-seasonal.mjs` statically renders every design with motion/intensity variants, countdown expiry, escaping, and reduced-motion preferences. `node tests/seasonal-preorder.mjs` covers persisted settings, schedules, migration replay, and preorder regression behavior. Neither test uses a browser or live providers.
+
+## Colored Black
+
+Select **Colored Black** under **Admin → Brand Name** for a palette-only edition: warm charcoal backgrounds, off-white type, muted grey secondary text, and spectrum category accents. It retains the Original storefront layout and typography. Seasonal hero scenes, announcements, particles, decorations, and countdowns are not shown. It can still use a start/end window and custom brand color overrides.
+
+The **Category colors** editor appears with Colored Black selected. Choose a swatch or enter a six-digit hex color, then **Save color** for that category. Color saves are independent of the brand Save button. Saved accents update the preview, category chips, category section bars, product-card markers and product category labels. Categories keep their colors across renames and theme switches; other themes do not display the spectrum accents. A color-only update does not overwrite category names or ordering.
+
+Existing categories receive green, orange, pink, blue, yellow and purple defaults once, in category order. No sample categories, products or commercial claims from the visual reference are added to the catalog.

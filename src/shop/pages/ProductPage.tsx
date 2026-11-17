@@ -5,6 +5,8 @@ import { toast } from 'sonner';
 import { Button } from '@/ui-kit/ui/button';
 import { Skeleton } from '@/ui-kit/ui/skeleton';
 import { ProductImage } from '../components/ProductCard';
+import { useSeason } from '../components/seasonal/SeasonProvider';
+import type { CSSProperties } from 'react';
 import { useCart } from '../lib/cart';
 import { usd, useStorefront } from '../lib/store';
 
@@ -12,6 +14,7 @@ export default function ProductPage() {
   const { id } = useParams();
   const { data, isLoading } = useStorefront();
   const { add } = useCart();
+  const coloredBlack = useSeason().season === 'colored-black';
   const [qty, setQty] = useState(1);
   const [selectedVariantId, setSelectedVariantId] = useState('');
   const product = data?.products.find((item) => item.id === id);
@@ -46,7 +49,7 @@ export default function ProductPage() {
     <div className="grid md:grid-cols-2 gap-10">
       <ProductImage p={product} className="aspect-square w-full border" />
       <div>
-        <p className="font-mono text-xs uppercase tracking-widest text-primary">{product.category}</p>
+        <p className="font-mono text-xs uppercase tracking-widest text-primary" style={coloredBlack ? {'--category-color': data?.categories.find((item)=>item.name===product.category)?.color ?? '#9E9C92'} as CSSProperties : undefined}>{coloredBlack && <span className="category-color-swatch" aria-hidden="true"/>}{product.category}</p>
         <h1 className="text-3xl font-bold tracking-tight mt-2">{product.name}</h1>
         {product.shippingOption && <p className="mt-1 text-sm text-muted-foreground">Ships from {product.shippingOption.name}</p>}
 

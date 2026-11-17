@@ -309,6 +309,7 @@ export type OrdersRecordInput = {
 
 /** A record in the "Categories" table, as it is read back. */
 export type CategoriesRecordType = {
+  color?: string;
   id: string;
   createdAt?: string;
   updatedAt?: string;
@@ -320,6 +321,7 @@ export type CategoriesRecordType = {
 
 /** What you may write when creating or updating a record in the "Categories" table. */
 export type CategoriesRecordInput = {
+  color?: string | null;
   name: string | null;
   sortOrder: string | number | null;
 };

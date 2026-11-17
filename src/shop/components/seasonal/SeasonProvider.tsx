@@ -31,7 +31,7 @@ export function SeasonProvider({ children, override }: { children: ReactNode; ov
   const reference = useMemo(() => ({ local: Date.now(), server: data?.theme.serverTime ? Date.parse(data.theme.serverTime) : Date.now() }), [data?.theme.serverTime]);
   const effectiveNow = override ? now : reference.server + now - reference.local;
   const season = activeSeason(config, effectiveNow);
-  const design = season === 'default' ? null : designs[season];
+  const design = season === 'default' || season === 'colored-black' ? null : designs[season];
   const motion = config.themeMotion && visitorMotion && !reduced;
   const setMotion = useCallback((enabled: boolean) => { setVisitorMotion(enabled); try { localStorage.setItem(Preference, enabled ? 'on' : 'off'); } catch { /* Session preference remains available. */ } }, []);
   const value = useMemo(() => ({ config, season, design, motion, reduced, visitorMotion, setVisitorMotion: setMotion }), [config, season, design, motion, reduced, visitorMotion, setMotion]);

@@ -20,11 +20,12 @@ try {
   await pg.installTestDatabase(database);
   const { migrate } = await mod('server/core/schema.js');
   await migrate(database);
-  assert.equal((await database.query('SELECT * FROM "SchemaMigrations"')).rows.length, 7);
+  assert.equal((await database.query('SELECT * FROM "SchemaMigrations"')).rows.length, 8);
   const { default: products } = await mod('server/admin/api/manageProducts.js');
   const { default: storefront } = await mod('server/shop/api/getStorefront.js');
   const { default: settings } = await mod('server/admin/api/manageSettings.js');
   const { default: checkout } = await mod('server/shop/api/createOrder.js');
+  const { default: categories } = await mod('server/admin/api/manageCategories.js');
   const { releaseOrderReservation } = await mod('server/core/orderState.js');
   const { toOrder } = await mod('server/shop/lib/server/orderShape.js');
   const context = { user: { id: 'season-test-user', email: 'season-test@example.com', role: 'admin' }, setCookies: [], request: { method: 'POST', headers: {}, rawBody: new Uint8Array(), query: {} } };
@@ -51,7 +52,7 @@ try {
     assert.equal(activeSeason(cfg, clock), season);
     assert.equal(activeSeason(cfg, clock+9999), season);
     assert.equal(activeSeason(cfg, clock+10000), 'default');
-    if (season !== 'default') assert.ok(designs[season].headline && designs[season].motif);
+    if (season !== 'default' && season !== 'colored-black') assert.ok(designs[season].headline && designs[season].motif);
   }
   const brandInput = { storeName: 'Season test', primaryColor: '', accentColor: '', seasonalTheme: 'winter', minimumAge: 21, themeIntensity: 'celebration', themeMotion: false, themeHeadline: 'Custom winter', themeSubtitle: 'A custom description', themeAnnouncement: 'Our winter event', themeCountdownAt: '2030-01-01T01:00:00Z', themeStartsAt: '2030-01-01T00:00:00Z', themeEndsAt: '2030-01-02T00:00:00Z' };
   await call(settings, { section: 'brand', settings: brandInput });
@@ -68,6 +69,25 @@ try {
   assert.equal((await call(storefront, {})).theme.seasonal, 'winter');
   assert.equal(settings.inputSchema.safeParse({ section: 'brand', settings: { storeName: 'Test', primaryColor: '', accentColor: '', seasonalTheme: 'unknown', minimumAge: 19 } }).success, false);
   await assert.rejects(() => call(settings, { section: 'policies', settings: { termsOfService: '[COMPLETE: business]', privacyPolicy: '', shippingPolicy: '', refundPolicy: '' } }), /Complete|Incomplete/);
+  const { validCategoryColor } = await mod('shared/categoryColors.js');
+  assert.ok((await call(categories,{action:'list'})).categories.every((category)=>validCategoryColor(category.color)));
+  const withColor = await call(categories,{action:'save',name:'Color test category',sortOrder:123,color:'#f83c86'});
+  const colorCategory = withColor.categories.find((c)=>c.name==='Color test category');
+  assert.equal(colorCategory.color,'#F83C86');
+  await call(categories,{action:'save',id:colorCategory.id,name:'Renamed color category',sortOrder:124});
+  await call(categories,{action:'colorSave',id:colorCategory.id,color:'#2266f4'});
+  const persisted = (await call(categories,{action:'list'})).categories.find((c)=>c.id===colorCategory.id);
+  assert.equal(persisted.color,'#2266F4');
+  assert.equal(persisted.name,'Renamed color category');
+  assert.equal(persisted.sortOrder,124);
+  assert.equal(categories.inputSchema.safeParse({action:'colorSave',id:colorCategory.id,color:'url(javascript:bad)'}).success,false);
+  await migrate(database);
+  assert.equal((await call(categories,{action:'list'})).categories.find((c)=>c.id===colorCategory.id).color,'#2266F4');
+  const coloredSettings = { ...brandInput,seasonalTheme:'colored-black',themeStartsAt:'',themeEndsAt:'' };
+  await call(settings,{section:'brand',settings:coloredSettings});
+  const coloredStorefront = storefront.outputSchema.parse(await call(storefront,{}));
+  assert.equal(coloredStorefront.theme.seasonal,'colored-black');
+  assert.equal(coloredStorefront.categories.find((c)=>c.id===colorCategory.id).color,'#2266F4');
   const date = new Date(Date.now() + 7 * 86400000).toISOString();
   const draft = { name: 'Test preorder', description: '', price: 40, salePrice: null, size: '10mg', purity: '', category: '', imageUrl: '', stock: 2, active: true, featured: false, coaUrl: '', showCoa: false, hasVariants: false, shippingScope: 'product', shippingOptionId: 'test-option', subcategoryDividerId: null, variants: [], preorderEnabled: true, preorderExpectedShipAt: date };
   const saved = await call(products, { action: 'save', product: draft });

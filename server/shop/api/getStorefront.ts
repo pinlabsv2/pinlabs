@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { createEndpoint } from '../../core/endpoint.js';
 import { db } from '../../core/db.js';
 import { activeSeason, seasons, seasonalDefaults, type Season } from '../../../shared/seasonal.js';
+import { categoryColor } from '../../../shared/categoryColors.js';
 import { getSettings } from '../lib/server/store.js';
 import { CURRENCIES, META, walletFor } from '../lib/server/crypto.js';
 
@@ -26,7 +27,7 @@ export default createEndpoint({
       purchasable: z.boolean(), unavailableReason: z.string(),
     })),
     categories: z.array(z.object({
-      id: z.string(), name: z.string(), sortOrder: z.number(),
+      id: z.string(), name: z.string(), color: z.string(), sortOrder: z.number(),
       dividers: z.array(z.object({ id: z.string(), name: z.string(), sortOrder: z.number() })),
     })),
     promo: z.object({ active: z.boolean(), title: z.string(), subtitle: z.string(), code: z.string() }),
@@ -139,7 +140,8 @@ export default createEndpoint({
     const themeConfig = { ...seasonalDefaults, seasonalTheme: seasons.includes(settings?.seasonalTheme as Season) ? settings!.seasonalTheme as Season : 'default' as const, themeStartsAt: settings?.themeStartsAt ?? '', themeEndsAt: settings?.themeEndsAt ?? '' };
     return {
       products,
-      categories: cats.records.map((category) => ({
+      categories: cats.records.map((category,index) => ({
+        color: categoryColor(category.color,index),
         id: category.id, name: category.name ?? '', sortOrder: category.sortOrder ?? 0,
         dividers: dividersByCategory.get(category.id) ?? [],
       })),

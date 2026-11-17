@@ -41,7 +41,7 @@ export const TABLES: Record<string, Record<string, Col>> = {
     totalCents: 'bigint', checkoutIdempotencyKey: 'text', cancelledAt: 'timestamptz', closedAt: 'timestamptz', migrationVersion: 'integer',
     shippingBreakdownJson: 'jsonb',
   },
-  Categories: { name: 'text', sortOrder: 'double precision' },
+  Categories: { color: 'text', name: 'text', sortOrder: 'double precision' },
   SupportContacts: { label: 'text', channel: 'text', handle: 'text', sortOrder: 'double precision' },
   CustomerProfiles: {
     fullName: 'text', user: 'text', country: 'text', streetAddress: 'text', postalCode: 'text', city: 'text', reviewDisplayName: 'text',

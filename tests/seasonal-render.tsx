@@ -7,19 +7,32 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { designs, seasons, seasonalDefaults } from '../shared/seasonal';
 import { SeasonProvider } from '../src/shop/components/seasonal/SeasonProvider';
 import { SeasonalHero, SeasonalNavDecor, SeasonalDivider, SeasonalCardDecoration, SeasonalEmpty, SeasonalMotionControl, SeasonalCheckoutAccent } from '../src/shop/components/seasonal/SeasonalExperience';
+import { CartProvider } from '../src/shop/lib/cart';
+import Shop from '../src/shop/pages/Shop';
 import ThemeColors from '../src/shop/components/ThemeColors';
 let reducedMotion = false;
 let storedMotion: string | null = null;
 Object.defineProperty(globalThis, 'window', { value: { matchMedia: () => ({ matches: reducedMotion }) }, configurable: true });
 Object.defineProperty(globalThis, 'localStorage', { value: { getItem: () => storedMotion, setItem: (_key: string, value: string) => { storedMotion = value; } }, configurable: true });
 const client = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: Infinity } } });
-client.setQueryData(['storefront'], { theme: { seasonal: 'default', configuredSeasonal: 'default', primary: '', accent: '', intensity: 'balanced', motion: true, headline: '', subtitle: '', announcement: '', startsAt: '', endsAt: '', countdownAt: '', serverTime: new Date().toISOString() }, storeName: 'Test store' });
+client.setQueryData(['storefront'], { theme: { seasonal: 'default', configuredSeasonal: 'default', primary: '', accent: '', intensity: 'balanced', motion: true, headline: '', subtitle: '', announcement: '', startsAt: '', endsAt: '', countdownAt: '', serverTime: new Date().toISOString() }, storeName: 'Test store', products: [{id:'reference',name:'Reference sample',category:'Metabolic',description:'',hasVariants:false,purchasable:false,featured:false,purity:'',size:'10mg',stock:1,shippingOption:null,shippingScope:'product',subcategoryDividerId:null,preorderEnabled:false,preorderExpectedShipAt:null,variants:[],minPrice:10,maxPrice:10,price:10,salePrice:null,imageUrl:'',unavailableReason:'Preview',coaUrl:'',paidUnits:0}], categories: [{id:'metabolic',name:'Metabolic',color:'#1EC474',sortOrder:0,dividers:[]}] });
 const markup = new Set<string>();
 for (const season of seasons) {
   const config = { ...seasonalDefaults, seasonalTheme: season, storeName: 'Test store', themeCountdownAt: new Date(Date.now()+60000).toISOString() };
   const render = (extra = {}) => renderToStaticMarkup(<QueryClientProvider client={client}><StaticRouter location="/"><SeasonProvider override={{...config,...extra}}><ThemeColors/><SeasonalHero/><SeasonalNavDecor/><SeasonalDivider/><SeasonalCardDecoration/><SeasonalEmpty/><SeasonalCheckoutAccent/><SeasonalMotionControl/></SeasonProvider></StaticRouter></QueryClientProvider>);
   const html = render();
-  if (season === 'default') { assert.equal(html, ''); continue; }
+  if (season === 'default' || season === 'colored-black') {
+    assert.equal(html, '');
+    const shop = renderToStaticMarkup(<QueryClientProvider client={client}><StaticRouter location="/"><CartProvider><SeasonProvider override={config}><Shop/></SeasonProvider></CartProvider></StaticRouter></QueryClientProvider>);
+    assert.ok(shop.includes('Lab-verified peptides,'));
+    assert.ok(!shop.includes('season-hero') && !shop.includes('seasonal-ambience'));
+    assert.equal(shop.includes('category-color-chip'),season==='colored-black');
+    assert.equal(shop.includes('category-color-product'),season==='colored-black');
+    assert.equal(shop.includes('category-color-heading'),season==='colored-black');
+    assert.ok(shop.includes('Reference sample'));
+    assert.equal(shop.includes('--category-color:#1EC474'),season==='colored-black');
+    continue;
+  }
   assert.ok(html.includes(`season-scene--${season}`), season);
   assert.ok(html.includes('season-product') || html.includes('season-card-decoration'));
   assert.ok(html.includes('season-countdown'));
@@ -47,4 +60,4 @@ for (const season of seasons) {
 }
 assert.equal(markup.size, Object.keys(designs).length);
 client.clear();
-console.log('PASS: all 12 designs render, unique scenes, garland/button removal, countdown expiry, motion disabled, and escaped custom copy.');
+console.log('PASS: all 13 theme options render (Colored Black preserves the original layout), unique scenes, garland/button removal, countdown expiry, motion disabled, and escaped custom copy.');

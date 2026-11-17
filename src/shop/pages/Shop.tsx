@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type CSSProperties } from 'react';
 import { Search, ShieldCheck, Truck, Microscope } from 'lucide-react';
 import { Input } from '@/ui-kit/ui/input';
 import { Skeleton } from '@/ui-kit/ui/skeleton';
@@ -12,7 +12,8 @@ type ProductGroup = { key: string; category: string; divider: string; products: 
 
 export default function Shop() {
   const { data, isLoading } = useStorefront();
-  const { design } = useSeason();
+  const { design, season } = useSeason();
+  const coloredBlack = season === 'colored-black';
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState('All');
   const [sort, setSort] = useState<'best' | 'name' | 'low' | 'high'>('best');
@@ -67,7 +68,7 @@ export default function Shop() {
       <div className="flex flex-col md:flex-row gap-3 md:items-center mb-8">
         <div className="flex gap-1.5 flex-wrap">
           <button onClick={() => setCategory('All')} className={cn('px-3.5 py-1.5 text-sm border transition', category === 'All' ? 'bg-foreground text-background border-foreground' : 'hover:bg-muted')}>All</button>
-          {data?.categories.map((item) => <button key={item.id} onClick={() => setCategory(item.name)} className={cn('px-3.5 py-1.5 text-sm border transition', category === item.name ? 'bg-foreground text-background border-foreground' : 'hover:bg-muted')}>{item.name}</button>)}
+          {data?.categories.map((item) => <button key={item.id} onClick={() => setCategory(item.name)} style={coloredBlack ? {'--category-color':item.color} as CSSProperties : undefined} className={cn('px-3.5 py-1.5 text-sm border transition', coloredBlack && 'category-color-chip', category === item.name ? 'bg-foreground text-background border-foreground' : 'hover:bg-muted')}>{coloredBlack && <span className="category-color-swatch" aria-hidden="true"/>}{item.name}</button>)}
         </div>
         <div className="md:ml-auto flex gap-2">
           <div className="relative flex-1 md:w-64"><Search className="size-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" /><Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search compounds" className="pl-9" /></div>
@@ -80,10 +81,10 @@ export default function Shop() {
         : groups.length === 0 ? <div className="text-center text-muted-foreground py-12"><SeasonalEmpty kind="search"/><p>No products match your search.</p></div>
         : <div className="space-y-10">{groups.map((group, index) => {
           const showCategory = index === 0 || groups[index - 1].category !== group.category;
-          return <section key={group.key} className="season-product-group space-y-4">
+          return <section key={group.key} className="season-product-group space-y-4" style={coloredBlack ? {'--category-color':data?.categories.find((item)=>item.name===group.category)?.color ?? '#9E9C92'} as CSSProperties : undefined}>
             {showCategory && <SeasonalDivider/>}
-            {showCategory && <h2 className="text-2xl font-semibold lowercase">{group.category}</h2>}
-            {group.divider && <div className="flex items-center gap-3" aria-label={`${group.divider} section`}><span className="size-2.5 shrink-0 bg-foreground" /><h3 className="text-sm font-medium">{group.divider}</h3><span className="h-px flex-1 bg-border" /></div>}
+            {showCategory && <h2 className={cn("text-2xl font-semibold lowercase", coloredBlack && "category-color-heading")}>{group.category}</h2>}
+            {group.divider && <div className="flex items-center gap-3" aria-label={`${group.divider} section`}><span className={cn("size-2.5 shrink-0 bg-foreground", coloredBlack && "category-color-divider")} /><h3 className="text-sm font-medium">{group.divider}</h3><span className="h-px flex-1 bg-border" /></div>}
             <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">{group.products.map((product) => <ProductCard key={product.id} p={product} />)}</div>
           </section>;
         })}</div>}
