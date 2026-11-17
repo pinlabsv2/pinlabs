@@ -24,8 +24,9 @@ for (const season of seasons) {
   assert.ok(html.includes('season-product') || html.includes('season-card-decoration'));
   assert.ok(html.includes('season-countdown'));
   assert.ok(html.includes('season-empty'));
-  assert.ok(html.includes('season-nav-decor'));
-  assert.ok(html.includes('aria-pressed="false"'));
+  assert.equal(html.includes('season-nav-decor'), ['spring','christmas','easter','halloween'].includes(season));
+  assert.ok(!html.includes('season-garland'));
+  assert.ok(!html.includes('season-interactive-motif'));
   assert.ok(!html.includes('NaN') && !html.includes('undefined'));
   assert.equal((html.match(/<h1\b/g) || []).length, 1);
   assert.ok(render({ themeMotion: false }).includes('motion off'));
@@ -46,4 +47,4 @@ for (const season of seasons) {
 }
 assert.equal(markup.size, Object.keys(designs).length);
 client.clear();
-console.log('PASS: all 12 designs render, unique scenes, accessible decoration controls, countdown expiry, motion disabled, and escaped custom copy.');
+console.log('PASS: all 12 designs render, unique scenes, garland/button removal, countdown expiry, motion disabled, and escaped custom copy.');

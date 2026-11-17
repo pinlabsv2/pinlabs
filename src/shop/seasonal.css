@@ -18,13 +18,6 @@ html[data-season]:not([data-season="default"]) body { background-image: radial-g
 .season-announcement>svg { width: 18px; height: 18px; flex-shrink: 0; }
 .season-countdown { font: 11px var(--font-mono); font-variant-numeric: tabular-nums; padding-left: 1rem; border-left: 1px solid currentColor; }
 .season-nav-decor { height: 22px; position: relative; border-bottom: 1px solid var(--season-line); background: hsl(var(--card)); }
-.season-garland { display: flex; justify-content: space-around; align-items: start; height: 100%; overflow: hidden; border-top: 1px solid var(--season-line); }
-.season-garland span { width: 15px; color: hsl(var(--primary) / .45); transform: rotate(-12deg); }
-.season-garland span:nth-child(even) { color: hsl(var(--accent) / .6); transform: rotate(12deg); }
-.season-interactive-motif { position: absolute; top: -4px; right: 10%; width: 34px; height: 34px; padding: 5px; border: 1px solid var(--season-line); background: hsl(var(--card)); color: hsl(var(--primary)); z-index: 1; transition: color .3s, background .3s, transform .3s; }
-.season-interactive-motif:hover,.season-interactive-motif:active,.is-lit .season-interactive-motif { background: hsl(var(--accent)); color: hsl(var(--accent-foreground)); transform: rotate(10deg); }
-.is-lit .season-garland span { color: hsl(var(--accent)); }
-.season-interactive-motif:focus-visible { outline: 2px solid hsl(var(--ring)); outline-offset: 4px; }
 html[data-season]:not([data-season="default"]) .season-product-card { position: relative; border-color: var(--season-line); background-image: linear-gradient(145deg,hsl(var(--card)),var(--season-wash)); transition: border-color .3s, transform .3s; }
 html[data-season]:not([data-season="default"]) .season-product-card:hover { border-color: hsl(var(--primary) / .6); transform: translateY(-3px); }
 .season-card-decoration { position: absolute; z-index: 2; width: 38px; right: 9px; bottom: 9px; color: hsl(var(--primary)); background: hsl(var(--card) / .94); padding: 5px; border: 1px solid var(--season-line); pointer-events: none; transition: transform .4s; }
@@ -74,8 +67,6 @@ html[data-season="black-friday"] .season-editorial-strip { color: hsl(43 65% 77%
 html[data-season="black-friday"] .season-product-card { border-style:dashed; border-bottom: 4px solid hsl(var(--primary)); }
 html[data-season="black-friday"] .season-card-decoration { border-style: dashed; }
 html[data-season="christmas"] .season-hero::before { background-image:repeating-linear-gradient(45deg,transparent 0 40px,hsl(var(--accent) / .035) 40px 41px); }
-html[data-season="christmas"] .season-garland { border-top: 2px solid hsl(var(--primary)); }
-html[data-season="christmas"] .season-garland span:nth-child(3n) { color: hsl(42 75% 35%); }
 html[data-season="christmas"] .season-product-image::after { content:''; position:absolute; top:0; right:20px; width:9px; height:38%; background:hsl(var(--accent) / .8); pointer-events:none; }
 html[data-season="christmas"] .season-product-card { border-bottom:3px double hsl(var(--primary)); }
 html[data-season="christmas"] .scene-motif { width:50px; transform-origin:50% 0; }
@@ -103,12 +94,10 @@ html[data-season-motion="on"][data-season="winter"] .season-scene::before { anim
 html[data-season-motion="on"][data-season="christmas"] .scene-motif { animation:season-sway 8s ease-in-out infinite alternate; }
 html[data-season-motion="on"] .scene-firework { animation:season-bloom 9s ease-in-out infinite; }
 html[data-season-motion="on"][data-season="spring"] .scene-motif { animation:season-blossom 12s ease-in-out infinite alternate; }
-html[data-season-motion="on"][data-season="christmas"] .season-garland span { animation:season-light 12s ease-in-out infinite alternate; }
-html[data-season-motion="on"][data-season="christmas"] .season-garland span:nth-child(even) { animation-delay:-6s; }
 html[data-season-intensity="subtle"] .season-editorial-strip { display:none; }
 html[data-season-intensity="subtle"] .season-scene { opacity:.8; }
 html[data-season-intensity="celebration"] .season-scene { border-bottom:4px double hsl(var(--accent) / .5); }
-html[data-season-motion="off"] :is(.season-product-card,.season-card-decoration,.season-interactive-motif,.scene-motif) { transition:none; animation:none; }
+html[data-season-motion="off"] :is(.season-product-card,.season-card-decoration,.scene-motif) { transition:none; animation:none; }
 html[data-season-motion="off"] .season-product-card:hover { transform:none; }
 html[data-season-motion="off"] .season-product-card:hover .season-card-decoration { transform:none; }
 @keyframes season-orbit { to { transform:rotate(360deg); } }
@@ -117,13 +106,11 @@ html[data-season-motion="off"] .season-product-card:hover .season-card-decoratio
 @keyframes season-sway { from { transform:rotate(-9deg); } to { transform:rotate(9deg); } }
 @keyframes season-bloom { 0%,100% { opacity:.2; } 45%,65% { opacity:.85; } }
 @keyframes season-blossom { to { transform:rotate(15deg) scale(1.08); } }
-@keyframes season-light { to { opacity:.45; } }
 @media(max-width:640px) {
  .season-editorial-strip { gap:1rem; font-size:8px; flex-wrap:wrap; }
  .season-editorial-strip span:last-child { display:none; }
  .season-headline { font-size:clamp(2.7rem,11vw,4rem); }
  .season-scene { max-height:260px; }
- .season-garland span:nth-child(even) { display:none; }
  .season-announcement { font-size:10px; }
  .season-hero-copy { min-width:0; }
 }
@@ -138,7 +125,5 @@ html[data-season-motion="off"] .season-product-card:hover .season-card-decoratio
 .season-web { position:absolute;left:0;top:0;width:85px;height:40px;color:hsl(var(--accent) / .5);pointer-events:none; }
 html[data-season]:not([data-season="default"]) .storefront main h1:not(.season-headline) { font-family:var(--font-serif);font-weight:400; }
 html[data-season="black-friday"] .storefront main h1:not(.season-headline) { font-family:var(--font-sans);font-weight:700; }
-html[data-season="spring"][data-season-motion="on"] .season-interactive-motif:hover svg,
-html[data-season="spring"][data-season-motion="on"] .is-lit .season-interactive-motif svg { transform:rotate(20deg) scale(1.15);transition:transform .4s; }
 /* Keep real product labels readable above decorative gift ribbons. */
 .season-product-image>span { z-index:3; }

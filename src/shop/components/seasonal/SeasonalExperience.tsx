@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Motif, SeasonalScene } from './SeasonalArt';
 import { useSeason, useSeasonClock } from './SeasonProvider';
@@ -32,15 +31,11 @@ export function SeasonalAnnouncement() {
   return <div className="season-announcement"><Motif kind={design.motif}/><span>{config.themeAnnouncement || design.announcement}</span>{remaining>0 && <span role="timer" aria-label={`Event countdown: ${countdown}`} className="season-countdown">{countdown}</span>}</div>;
 }
 export function SeasonalNavDecor() {
-  const { design, season, motion } = useSeason();
-  const [lit, setLit] = useState(false);
-  if (!design) return null;
-  return <div className={`season-nav-decor ${lit ? 'is-lit' : ''}`}>
+  const { design, season } = useSeason();
+  if (!design || !['spring','christmas','easter','halloween'].includes(season)) return null;
+  return <div className="season-nav-decor" aria-hidden="true">
     {['spring','christmas','easter'].includes(season) && <svg className="season-vine" viewBox="0 0 1200 24" preserveAspectRatio="none" aria-hidden="true"><path d="M0 1q75 40 150 0t150 0 150 0 150 0 150 0 150 0 150 0 150 0" fill="none" stroke="currentColor"/></svg>}
     {season === 'halloween' && <svg className="season-web" viewBox="0 0 100 60" aria-hidden="true"><path d="M0 0 100 60M0 0l90 20M0 0l35 60M30 0q-10 20-30 20M65 0Q50 45 0 40M95 0Q80 70 0 60" fill="none" stroke="currentColor"/></svg>}
-    <div className="season-garland" aria-hidden="true">{Array.from({length:12},(_,i)=><span key={i}><Motif kind={design.motif}/></span>)}</div>
-    <button type="button" className="season-interactive-motif" aria-pressed={lit} aria-label={`${lit ? 'Reset' : 'Illuminate'} ${seasonLabels[season]} decoration`} onClick={() => setLit(!lit)} title="Tap for a seasonal detail"><Motif kind={design.motif}/></button>
-    <span className="sr-only">{lit ? 'Seasonal decoration illuminated.' : 'Seasonal decoration in its original state.'}{!motion ? ' Motion is off.' : ''}</span>
   </div>;
 }
 export function SeasonalCardDecoration() {
