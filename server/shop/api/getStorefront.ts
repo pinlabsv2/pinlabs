@@ -5,7 +5,9 @@ import { getSettings } from '../lib/server/store.js';
 import { CURRENCIES, META, walletFor } from '../lib/server/crypto.js';
 
 const shippingOptionSchema = z.object({ id: z.string(), name: z.string(), price: z.number() });
+const preorderFields = { preorderEnabled: z.boolean(), preorderExpectedShipAt: z.string().nullable() };
 const variantSchema = z.object({
+  ...preorderFields,
   id: z.string(), name: z.string(), price: z.number(), salePrice: z.number().nullable(), stock: z.number().nullable(),
   shippingOption: shippingOptionSchema.nullable(), purchasable: z.boolean(), unavailableReason: z.string(),
 });
@@ -15,6 +17,7 @@ export default createEndpoint({
   inputSchema: z.object({}),
   outputSchema: z.object({
     products: z.array(z.object({
+      ...preorderFields,
       id: z.string(), name: z.string(), description: z.string(), price: z.number(), salePrice: z.number().nullable(), size: z.string(),
       purity: z.string(), category: z.string(), imageUrl: z.string(), stock: z.number().nullable(), featured: z.boolean(), paidUnits: z.number(), coaUrl: z.string(),
       hasVariants: z.boolean(), shippingScope: z.enum(['product', 'variant']), subcategoryDividerId: z.string().nullable(),
@@ -28,7 +31,8 @@ export default createEndpoint({
     promo: z.object({ active: z.boolean(), title: z.string(), subtitle: z.string(), code: z.string() }),
     storeName: z.string(), paymentMethods: z.array(z.object({ code: z.string(), network: z.string() })), testMode: z.boolean(),
     support: z.array(z.object({ label: z.string(), channel: z.string(), handle: z.string() })),
-    theme: z.object({ primary: z.string(), accent: z.string() }),
+    minimumAge: z.number(),
+    theme: z.object({ primary: z.string(), accent: z.string(), seasonal: z.string() }),
     policies: z.object({ terms: z.string(), privacy: z.string(), shipping: z.string(), refund: z.string() }),
   }),
   execute: async () => {
@@ -70,6 +74,7 @@ export default createEndpoint({
       const option = optionFrom(row);
       const purchasable = !!option && (stock == null || stock > 0);
       const variant = {
+        preorderEnabled: row.preorderEnabled === true, preorderExpectedShipAt: row.preorderExpectedShipAt ? new Date(row.preorderExpectedShipAt as string).toISOString() : null,
         id: String(row.id), name: String(row.name ?? ''), price: Number(row.price ?? 0),
         salePrice: typeof row.salePrice === 'number' && row.salePrice > 0 && row.salePrice < Number(row.price ?? 0) ? row.salePrice : null,
         stock, shippingOption: option, purchasable,
@@ -89,15 +94,22 @@ export default createEndpoint({
       const rawVariants = variantsByProduct.get(String(row.id)) ?? [];
       const variants = rawVariants.map((variant) => {
         const option = shippingScope === 'product' ? parentOption : variant.shippingOption;
-        const purchasable = !!option && (variant.stock == null || variant.stock > 0);
-        return { ...variant, shippingOption: option, purchasable, unavailableReason: !option ? 'Shipping setup required' : variant.stock === 0 ? 'Sold out' : '' };
+        const preorderEnabled = row.preorderEnabled === true || variant.preorderEnabled;
+        const preorderExpectedShipAt = row.preorderEnabled === true ? (row.preorderExpectedShipAt ? new Date(row.preorderExpectedShipAt as string).toISOString() : null) : variant.preorderExpectedShipAt;
+        const ready = !preorderEnabled || !!preorderExpectedShipAt && Date.parse(preorderExpectedShipAt) > Date.now() && variant.stock !== null;
+        const purchasable = ready && !!option && (variant.stock == null || variant.stock > 0);
+        return { ...variant, preorderEnabled, preorderExpectedShipAt, shippingOption: option, purchasable, unavailableReason: !ready ? 'Preorder date needs updating' : !option ? 'Shipping setup required' : variant.stock === 0 ? 'Sold out' : '' };
       });
       const missingVariantShipping = hasVariants && (shippingScope === 'product' ? !parentOption : variants.some((variant) => !variant.shippingOption));
-      const anyVariantInStock = variants.some((variant) => variant.stock == null || variant.stock > 0);
+      const anyVariantInStock = variants.some((variant) => variant.purchasable);
+      const preorderEnabled = row.preorderEnabled === true;
+      const preorderExpectedShipAt = row.preorderExpectedShipAt ? new Date(row.preorderExpectedShipAt as string).toISOString() : null;
+      const ready = !preorderEnabled || !!preorderExpectedShipAt && Date.parse(preorderExpectedShipAt) > Date.now() && stock !== null;
       const purchasable = hasVariants
         ? variants.length > 0 && !missingVariantShipping && anyVariantInStock
-        : !!parentOption && (stock == null || stock > 0);
+        : ready && !!parentOption && (stock == null || stock > 0);
       const unavailableReason = purchasable ? ''
+        : !hasVariants && !ready ? 'Preorder date needs updating'
         : hasVariants && variants.length === 0 ? 'No variants available'
         : missingVariantShipping || !hasVariants && !parentOption ? 'Shipping setup required'
         : 'Sold out';
@@ -105,6 +117,7 @@ export default createEndpoint({
         ? variants.map((variant) => variant.salePrice ?? variant.price)
         : [salePrice ?? price];
       return {
+        preorderEnabled, preorderExpectedShipAt,
         id: String(row.id), name: String(row.name ?? ''), description: String(row.description ?? ''), price, salePrice,
         size: String(row.size ?? ''), purity: String(row.purity ?? ''), category: String(row.category ?? ''), imageUrl: String(row.imageUrl ?? ''),
         stock, featured: row.featured === true, paidUnits: Number(row.paidUnits ?? 0),
@@ -133,7 +146,8 @@ export default createEndpoint({
       paymentMethods: CURRENCIES.filter((currency) => walletFor(settings, currency)).map((currency) => ({ code: currency, network: META[currency].network })),
       testMode: !!settings?.testMode,
       support: support.records.map((contact) => ({ label: contact.label ?? '', channel: contact.channel ?? 'Email', handle: contact.handle ?? '' })),
-      theme: { primary: settings?.primaryColor ?? '', accent: settings?.accentColor ?? '' },
+      minimumAge: settings?.minimumAge === 21 ? 21 : 18,
+      theme: { primary: settings?.primaryColor ?? '', accent: settings?.accentColor ?? '', seasonal: settings?.seasonalTheme ?? 'default' },
       policies: { terms: settings?.termsOfService ?? '', privacy: settings?.privacyPolicy ?? '', shipping: settings?.shippingPolicy ?? '', refund: settings?.refundPolicy ?? '' },
     };
   },

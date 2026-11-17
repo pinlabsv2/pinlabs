@@ -6,9 +6,11 @@ import { getSettings } from '../lib/server/store.js';
 import { CURRENCIES, getUsdPrice, markPaid, uniqueCryptoAmount, walletFor } from '../lib/server/crypto.js';
 
 const bad = (message: string) => new AppError({ code: 'BAD_REQUEST', message, userFacingMessage: message });
-const itemSchema = z.object({ productId: z.string(), variantId: z.string().nullable(), quantity: z.number().int().min(1).max(50) });
+const itemSchema = z.object({ productId: z.string(), variantId: z.string().nullable(), preorderExpectedShipAt: z.string().datetime().nullable().optional(), quantity: z.number().int().min(1).max(50) });
 
 type LockedLine = {
+  preorderEnabled: boolean;
+  preorderExpectedShipAt: string | null;
   productId: string;
   productName: string;
   variantId: string | null;
@@ -25,6 +27,9 @@ export default createEndpoint({
   description: 'Places an order for parent products or variants and quotes a crypto payment',
   authenticated: true,
   inputSchema: z.object({
+    researchOnly: z.literal(true),
+    confirmedMinimumAge: z.union([z.literal(18), z.literal(21)]),
+    preorderAccepted: z.boolean().default(false),
     items: z.array(itemSchema).min(1).max(200),
     customerName: z.string().trim().min(1),
     address: z.object({ street: z.string().trim().min(3), city: z.string().trim().min(1), postalCode: z.string().trim().min(2), country: z.string().trim().min(2) }),
@@ -42,6 +47,7 @@ export default createEndpoint({
     }
     const requested = [...aggregate.values()].sort((a, b) => a.productId.localeCompare(b.productId) || (a.variantId ?? '').localeCompare(b.variantId ?? ''));
     const settings = await getSettings();
+    if (input.confirmedMinimumAge < (settings?.minimumAge === 21 ? 21 : 18)) throw bad('Please confirm the current minimum age requirement.');
     const isTest = input.payCurrency === 'TEST';
     if (isTest && !settings?.testMode) throw bad('Test payments are turned off.');
     const payAddress = isTest ? 'TEST' : walletFor(settings, input.payCurrency as (typeof CURRENCIES)[number]);
@@ -79,10 +85,16 @@ export default createEndpoint({
         const rawSale = variant ? variant.salePrice : product.salePrice;
         const salePrice = typeof rawSale === 'number' && rawSale > 0 && rawSale < price ? rawSale : null;
         const stock = variant ? variant.stock : product.stock;
+        const preorderEnabled = product.preorderEnabled === true || variant?.preorderEnabled === true;
+        const rawDate = product.preorderEnabled === true ? product.preorderExpectedShipAt : variant?.preorderExpectedShipAt;
+        const preorderExpectedShipAt = preorderEnabled && rawDate ? new Date(rawDate).toISOString() : null;
+        if (preorderEnabled && (!preorderExpectedShipAt || Date.parse(preorderExpectedShipAt) <= Date.now() || stock == null)) throw bad('Preorder availability needs updating. Please contact support.');
+        if (preorderEnabled && item.preorderExpectedShipAt !== preorderExpectedShipAt) throw bad('The preorder dispatch date changed. Refresh your cart and accept the new date.');
+        if (preorderEnabled && !input.preorderAccepted) throw bad('Accept the preorder dispatch dates and payment terms before ordering.');
         if (typeof stock === 'number' && stock < item.quantity) throw bad(`Only ${stock} of ${String(variant?.name ?? product.name ?? 'this item')} remain in stock.`);
         const shippingOptionId = shippingScope === 'variant' ? variant?.shippingOptionId : product.shippingOptionId;
         if (typeof shippingOptionId !== 'string' || !shippingOptionId) throw bad(`${String(product.name ?? 'An item')} needs shipping setup before checkout.`);
-        return { item, product, variant, shippingOptionId, priceCents: Math.round((salePrice ?? price) * 100) };
+        return { item, product, variant, preorderEnabled, preorderExpectedShipAt, shippingOptionId, priceCents: Math.round((salePrice ?? price) * 100) };
       });
 
       const optionIds = [...new Set(pending.map((line) => String(line.shippingOptionId)))].sort();
@@ -90,11 +102,12 @@ export default createEndpoint({
       const options = new Map(optionRows.map((row) => [String(row.id), row]));
       if (options.size !== optionIds.length) throw bad('A shipping option in your cart is no longer available.');
 
-      const lines: LockedLine[] = pending.map(({ item, product, variant, shippingOptionId, priceCents }) => {
+      const lines: LockedLine[] = pending.map(({ item, product, variant, preorderEnabled, preorderExpectedShipAt, shippingOptionId, priceCents }) => {
         const option = options.get(String(shippingOptionId))!;
         const productName = String(product.name ?? 'Product');
         const variantName = variant ? String(variant.name ?? '') : '';
         return {
+          preorderEnabled, preorderExpectedShipAt,
           productId: item.productId, productName, variantId: item.variantId, variantName,
           name: variantName ? `${productName} (${variantName})` : `${productName}${product.size ? ` (${String(product.size)})` : ''}`,
           priceCents, quantity: item.quantity, shippingOptionId: String(option.id), shippingOptionName: String(option.name ?? ''),
@@ -149,6 +162,7 @@ export default createEndpoint({
       }
 
       const itemSnapshots = lines.map((line) => ({
+        preorderEnabled: line.preorderEnabled, preorderExpectedShipAt: line.preorderExpectedShipAt,
         productId: line.productId, productName: line.productName, variantId: line.variantId, variantName: line.variantName,
         name: line.name, price: line.priceCents / 100, quantity: line.quantity,
         shippingOptionId: line.shippingOptionId, shippingOptionName: line.shippingOptionName,
@@ -168,6 +182,7 @@ export default createEndpoint({
         ],
       );
 
+      await tx.query(`UPDATE "Orders" SET "researchAcceptedAt"=now(), "acceptedMinimumAge"=$2 WHERE "id"=$1`, [orderId, input.confirmedMinimumAge]);
       const chargedOptions = new Set<string>();
       for (let index = 0; index < lines.length; index++) {
         const line = lines[index];
@@ -182,6 +197,7 @@ export default createEndpoint({
             line.shippingOptionId, line.shippingOptionName, line.shippingOptionPriceCents, line.priceCents, line.quantity,
             line.priceCents * line.quantity, allocatedShipping],
         );
+        await tx.query(`UPDATE "OrderItems" SET "preorderEnabled"=$3, "preorderExpectedShipAt"=$4 WHERE "orderId"=$1 AND "lineNumber"=$2`, [orderId, index, line.preorderEnabled, line.preorderExpectedShipAt]);
       }
       await enqueueOrderPlacedEmails(tx, {
         id: orderId,

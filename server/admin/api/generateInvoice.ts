@@ -16,7 +16,7 @@ export default createEndpoint({
     const esc = (s: unknown) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
     const n = (v: unknown) => { const x = Number(v); return Number.isFinite(x) ? x : 0; };
     const money = (v: unknown) => `$${n(v).toFixed(2)}`;
-    const rows = o.items.map((item) => `<tr><td>${esc(item.name)}${item.shippingOptionName ? `<div class="muted" style="font-size:7.5pt">Ships via ${esc(item.shippingOptionName)}</div>` : ''}</td><td class="num">${n(item.quantity)}</td><td class="num">${money(item.price)}</td><td class="num">${money(n(item.price) * n(item.quantity))}</td></tr>`).join('');
+    const rows = o.items.map((item) => `<tr><td>${esc(item.name)}${item.preorderEnabled ? `<div class="muted">Preorder · expected dispatch ${esc(item.preorderExpectedShipAt?.slice(0, 10) ?? "pending")}</div>` : ''}${item.shippingOptionName ? `<div class="muted" style="font-size:7.5pt">Ships via ${esc(item.shippingOptionName)}</div>` : ''}</td><td class="num">${n(item.quantity)}</td><td class="num">${money(item.price)}</td><td class="num">${money(n(item.price) * n(item.quantity))}</td></tr>`).join('');
     const shippingRows = o.shippingBreakdown.length
       ? o.shippingBreakdown.map((option) => `<tr><td>Shipping · ${esc(option.name)}</td><td class="num">${money(option.price)}</td></tr>`).join('')
       : `<tr><td>Shipping</td><td class="num">${o.shipping ? money(o.shipping) : 'Free'}</td></tr>`;

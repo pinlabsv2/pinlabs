@@ -2,6 +2,7 @@ import { z } from 'zod';
 import type { OrdersRecordType } from '../../../core/db.js';
 
 const itemSchema = z.object({
+  preorderEnabled: z.boolean(), preorderExpectedShipAt: z.string().nullable(),
   productId: z.string(),
   productName: z.string(),
   variantId: z.string().nullable(),
@@ -64,6 +65,7 @@ const parseArray = (value: unknown): Array<Record<string, unknown>> => {
 
 export function toOrder(order: OrdersRecordType): z.infer<typeof orderSchema> {
   const items = parseArray(order.itemsJson).map((item) => ({
+    preorderEnabled: item.preorderEnabled === true, preorderExpectedShipAt: item.preorderExpectedShipAt ? String(item.preorderExpectedShipAt) : null,
     productId: String(item.productId ?? ''),
     productName: String(item.productName ?? item.name ?? ''),
     variantId: item.variantId == null || item.variantId === '' ? null : String(item.variantId),

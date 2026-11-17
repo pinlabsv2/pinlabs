@@ -46,7 +46,7 @@ export default function Products() {
         const divider = dividerName(product.category, product.subcategoryDividerId);
         const shippingLabel = product.shippingScope === 'variant' ? 'Per variant' : optionName(product.shippingOptionId);
         return <TableRow key={product.id} className={product.setupRequired ? 'bg-destructive/5' : undefined}>
-          <TableCell><div className="font-medium">{product.name}</div><div className="text-xs text-muted-foreground">{product.hasVariants ? `${product.variantCount} variants` : `${product.size}${product.purity ? ` · ${product.purity}` : ''}`}</div>{product.setupRequired && <div className="mt-1 flex items-center gap-1 text-xs text-destructive"><AlertTriangle className="size-3" />Shipping setup required</div>}</TableCell>
+          <TableCell><div className="font-medium">{product.name}</div>{(product.preorderEnabled || product.variants.some((v) => v.preorderEnabled)) && <div className="text-xs font-medium text-primary">Preorder enabled</div>}<div className="text-xs text-muted-foreground">{product.hasVariants ? `${product.variantCount} variants` : `${product.size}${product.purity ? ` · ${product.purity}` : ''}`}</div>{product.setupRequired && <div className="mt-1 flex items-center gap-1 text-xs text-destructive"><AlertTriangle className="size-3" />Shipping setup required</div>}</TableCell>
           <TableCell><div>{product.category || '—'}</div>{divider && <div className="text-xs text-muted-foreground">{divider}</div>}</TableCell>
           <TableCell className="font-mono">{product.minPrice === product.maxPrice ? usd(product.minPrice) : `${usd(product.minPrice)}–${usd(product.maxPrice)}`}</TableCell>
           <TableCell className="font-mono">{product.stockSummary ?? '∞'}</TableCell>

@@ -15,6 +15,7 @@ export const TABLES: Record<string, Record<string, Col>> = {
   },
   ShippingOptions: { name: 'text', price: 'double precision' },
   ProductVariants: {
+    preorderEnabled: 'boolean', preorderExpectedShipAt: 'timestamptz',
     productId: 'text', name: 'text', price: 'double precision', salePrice: 'double precision', stock: 'integer',
     shippingOptionId: 'text', active: 'boolean', sortOrder: 'integer',
   },
@@ -27,9 +28,10 @@ export const TABLES: Record<string, Record<string, Col>> = {
     storeName: 'text', solAddress: 'text', ltcAddress: 'text', shippingFee: 'double precision', freeShippingOver: 'double precision',
     promoActive: 'boolean', promoTitle: 'text', promoSubtitle: 'text', promoCode: 'text', adminEmail: 'text', btcAddress: 'text',
     ethAddress: 'text', tronAddress: 'text', testMode: 'boolean', termsOfService: 'text', privacyPolicy: 'text', shippingPolicy: 'text',
-    refundPolicy: 'text', primaryColor: 'text', accentColor: 'text', etherscanApiKey: 'text', tronGridApiKey: 'text', solanaRpcUrl: 'text',
+    refundPolicy: 'text', seasonalTheme: 'text', minimumAge: 'integer', primaryColor: 'text', accentColor: 'text', etherscanApiKey: 'text', tronGridApiKey: 'text', solanaRpcUrl: 'text',
   },
   Orders: {
+    researchAcceptedAt: 'timestamptz', acceptedMinimumAge: 'integer',
     orderNumber: 'text', customer: 'text', customerEmail: 'text', customerName: 'text', shippingAddress: 'text', itemsJson: 'text',
     subtotal: 'double precision', discount: 'double precision', shipping: 'double precision', total: 'double precision', discountCode: 'text',
     discountCodeId: 'text', payCurrency: 'text', cryptoAmount: 'double precision', payAddress: 'text', transactionHash: 'text',
@@ -47,6 +49,7 @@ export const TABLES: Record<string, Record<string, Col>> = {
   Users: { email: 'text', passwordHash: 'text', firstName: 'text', lastName: 'text', role: 'text' },
   Files: { filename: 'text', mimeType: 'text', dataBase64: 'text' },
   OrderItems: {
+    preorderEnabled: 'boolean', preorderExpectedShipAt: 'timestamptz',
     orderId: 'text', lineNumber: 'integer', productId: 'text', productName: 'text', productSize: 'text', variantId: 'text', variantName: 'text',
     shippingOptionId: 'text', shippingOptionName: 'text', shippingOptionPriceCents: 'bigint', unitPriceCents: 'bigint',
     quantity: 'integer', lineSubtotalCents: 'bigint', discountCents: 'bigint', shippingCents: 'bigint',

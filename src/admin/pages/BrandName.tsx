@@ -9,7 +9,9 @@ import { Label } from '@/ui-kit/ui/label';
 import { Skeleton } from '@/ui-kit/ui/skeleton';
 import { Switch } from '@/ui-kit/ui/switch';
 
-const empty = { storeName: 'PinLabs', primaryColor: '', accentColor: '' };
+import { seasons, seasonLabels, type Season } from '@/shared/seasons';
+
+const empty = { seasonalTheme: 'default' as Season, minimumAge: 18 as 18 | 21, storeName: 'PinLabs', primaryColor: '', accentColor: '' };
 type BrandSettings = typeof empty;
 
 export default function BrandName() {
@@ -32,6 +34,8 @@ export default function BrandName() {
   };
   return <div className="max-w-2xl space-y-6">
     <section className="border bg-card p-5 space-y-4">
+      <div><Label htmlFor="seasonal-theme">Seasonal theme</Label><select id="seasonal-theme" className="mt-1.5 w-full border bg-background p-2" value={settings.seasonalTheme} onChange={(e) => set('seasonalTheme', e.target.value as Season)}>{seasons.map((id) => <option key={id} value={id}>{seasonLabels[id]}</option>)}</select><p className="mt-2 text-xs text-muted-foreground">Seasonal palettes and ambient decorations. Custom colors below override the palette. Reduced-motion preferences are respected.</p></div>
+      <div><Label htmlFor="minimum-age">Minimum visitor age</Label><select id="minimum-age" className="mt-1.5 w-full border bg-background p-2" value={settings.minimumAge} onChange={(e) => set('minimumAge', Number(e.target.value) as 18 | 21)}><option value={18}>18+</option><option value={21}>21+</option></select><p className="mt-2 text-xs text-muted-foreground">Store eligibility rule; local restrictions may require a higher age. This is a self-declaration, not identity verification.</p></div>
       <div><Label>Brand name</Label><Input className="mt-1.5" value={settings.storeName} onChange={(event) => set('storeName', event.target.value)} /></div>
       {([['primaryColor', 'Primary color', '#F5664B'], ['accentColor', 'Accent color', '#D9472B']] as const).map(([key, label, fallback]) => <div key={key}>
         <Label>{label}</Label><div className="mt-1.5 flex items-center gap-2"><Switch checked={!!settings[key]} onCheckedChange={(enabled) => set(key, enabled ? fallback : '')} />

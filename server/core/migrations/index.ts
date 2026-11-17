@@ -563,7 +563,18 @@ const emailMarketing: Migration = {
   },
 };
 
-const migrations: Migration[] = [constraints, backfill, catalogShipping, emailMarketing];
+const seasonalPreorder: Migration = {
+  version: '005-seasonal-preorder-research',
+  up: async (tx) => {
+    await runAll(tx, [
+      `ALTER TABLE "StoreSettings" ADD COLUMN IF NOT EXISTS "seasonalTheme" text DEFAULT 'default', ADD COLUMN IF NOT EXISTS "minimumAge" integer DEFAULT 18`,
+      `ALTER TABLE "ProductVariants" ADD COLUMN IF NOT EXISTS "preorderEnabled" boolean DEFAULT false, ADD COLUMN IF NOT EXISTS "preorderExpectedShipAt" timestamptz`,
+      `ALTER TABLE "OrderItems" ADD COLUMN IF NOT EXISTS "preorderEnabled" boolean DEFAULT false, ADD COLUMN IF NOT EXISTS "preorderExpectedShipAt" timestamptz`,
+      `ALTER TABLE "Orders" ADD COLUMN IF NOT EXISTS "researchAcceptedAt" timestamptz, ADD COLUMN IF NOT EXISTS "acceptedMinimumAge" integer`,
+    ]);
+  },
+};
+const migrations: Migration[] = [constraints, backfill, catalogShipping, emailMarketing, seasonalPreorder];
 
 export async function runMigrations(db: Queryable) {
   await db.query(`CREATE TABLE IF NOT EXISTS "SchemaMigrations" (

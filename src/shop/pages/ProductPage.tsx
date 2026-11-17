@@ -37,6 +37,7 @@ export default function ProductPage() {
   const unavailableReason = product.hasVariants && !selected
     ? 'Choose a variant to continue'
     : selected?.unavailableReason || product.unavailableReason;
+  const preorder = selected ?? product;
   const displayPrice = salePrice ?? price;
   const soldOut = typeof stock === 'number' && stock <= 0;
 
@@ -64,18 +65,19 @@ export default function ProductPage() {
               <span className="flex items-start justify-between gap-3"><span className="font-medium">{item.name}</span><span className="font-mono">{usd(itemPrice)}</span></span>
               <span className="mt-1 flex flex-wrap justify-between gap-2 text-xs text-muted-foreground">
                 <span>{item.shippingOption ? `Ships from ${item.shippingOption.name}` : item.unavailableReason}</span>
-                <span>{item.stock === null ? 'In stock' : itemSoldOut ? 'Sold out' : `${item.stock} left`}</span>
+                <span>{item.preorderEnabled ? `Preorder · dispatch ${item.preorderExpectedShipAt ? new Date(item.preorderExpectedShipAt).toLocaleDateString() : 'pending'}` : item.stock === null ? 'In stock' : itemSoldOut ? 'Sold out' : `${item.stock} left`}</span>
               </span>
             </button>;
           })}
         </fieldset>}
 
+        {preorder.preorderEnabled && <p className="mt-4 border border-primary p-3 text-sm"><strong>Preorder · full payment now</strong><br />Expected dispatch: {preorder.preorderExpectedShipAt ? new Date(preorder.preorderExpectedShipAt).toLocaleDateString() : 'To be confirmed'}. This item is not ready to ship.</p>}
         <div className="mt-5">
           {salePrice == null ? <span className="font-mono text-2xl font-semibold">{product.hasVariants && !selected ? `${usd(product.minPrice)}–${usd(product.maxPrice)}` : usd(price)}</span> : <span className="inline-flex items-baseline gap-2"><span className="font-mono text-2xl font-semibold text-promo">{usd(salePrice)}</span><span className="font-mono text-muted-foreground line-through">{usd(price)}</span></span>}
         </div>
         <dl className="grid grid-cols-2 gap-3 my-6 text-sm">
           <div className="border p-3"><dt className="text-xs text-muted-foreground">Purity</dt><dd className="font-medium font-mono">{product.purity || '—'}</dd></div>
-          <div className="border p-3"><dt className="text-xs text-muted-foreground">Stock</dt><dd className="font-medium font-mono">{product.hasVariants && !selected ? 'Select variant' : stock === null ? 'In stock' : soldOut ? 'Sold out' : `${stock} left`}</dd></div>
+          <div className="border p-3"><dt className="text-xs text-muted-foreground">{preorder.preorderEnabled ? "Preorder allocation" : "Stock"}</dt><dd className="font-medium font-mono">{product.hasVariants && !selected ? 'Select variant' : stock === null ? 'In stock' : soldOut ? 'Sold out' : `${stock} left`}</dd></div>
         </dl>
         <p className="text-muted-foreground whitespace-pre-line">{product.description}</p>
         {product.coaUrl && <a href={product.coaUrl} target="_blank" rel="noreferrer" className="mt-5 inline-flex items-center gap-2 border px-3 py-2 text-sm hover:border-primary hover:text-primary transition"><FileCheck2 className="size-4" />View certificate of analysis (COA)</a>}
@@ -92,6 +94,7 @@ export default function ProductPage() {
             onClick={() => {
               if (!shippingOption) return;
               add({
+                preorderEnabled: preorder.preorderEnabled, preorderExpectedShipAt: preorder.preorderExpectedShipAt,
                 productId: product.id,
                 variantId: selected?.id ?? null,
                 productName: product.name,
@@ -105,7 +108,7 @@ export default function ProductPage() {
               }, qty);
               toast.success('Added to cart');
             }}
-          >{available ? 'Add to cart' : unavailableReason || 'Unavailable'}</Button>
+          >{available ? preorder.preorderEnabled ? 'Preorder' : 'Add to cart' : unavailableReason || 'Unavailable'}</Button>
         </div>
         {!available && unavailableReason && product.hasVariants && selected && <p className="mt-2 text-sm text-destructive">{unavailableReason}</p>}
         <p className="mt-6 text-xs text-muted-foreground border-l-2 border-promo pl-3">For laboratory research use only. Not for human or veterinary use.</p>

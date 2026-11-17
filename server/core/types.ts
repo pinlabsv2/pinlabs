@@ -97,7 +97,7 @@ export type ShippingOptionsRecordInput = RecordInput<ShippingOptionsRecordType>;
 
 export type ProductVariantsRecordType = BaseRecord & {
   productId?: string; name?: string; price?: number; salePrice?: number; stock?: number; shippingOptionId?: string;
-  active?: boolean; sortOrder?: number;
+  active?: boolean; sortOrder?: number; preorderEnabled?: boolean; preorderExpectedShipAt?: string;
 };
 export type ProductVariantsRecordInput = RecordInput<ProductVariantsRecordType>;
 
@@ -165,6 +165,8 @@ export type StoreSettingsRecordType = {
   privacyPolicy?: string;
   shippingPolicy?: string;
   refundPolicy?: string;
+  seasonalTheme?: string;
+  minimumAge?: number;
   primaryColor?: string;
   accentColor?: string;
   etherscanApiKey?: string;
@@ -192,6 +194,8 @@ export type StoreSettingsRecordInput = {
   privacyPolicy: string | null;
   shippingPolicy: string | null;
   refundPolicy: string | null;
+  seasonalTheme: string | null;
+  minimumAge: number | null;
   primaryColor: string | null;
   accentColor: string | null;
   etherscanApiKey: string | null;
@@ -201,6 +205,7 @@ export type StoreSettingsRecordInput = {
 
 /** A record in the "Orders" table, as it is read back. */
 export type OrdersRecordType = {
+  researchAcceptedAt?: string; acceptedMinimumAge?: number;
   id: string;
   createdAt?: string;
   updatedAt?: string;
@@ -258,6 +263,7 @@ export type OrdersRecordType = {
 
 /** What you may write when creating or updating a record in the "Orders" table. */
 export type OrdersRecordInput = {
+  researchAcceptedAt: string | Date | null; acceptedMinimumAge: number | null;
   orderNumber: string | null;
   customer: string | string[] | null;
   customerEmail: string | null;
@@ -374,6 +380,7 @@ export type JsonValue = Record<string, unknown> | unknown[];
 export type IntegerValue = number | string;
 
 export type OrderItemsRecordType = BaseRecord & {
+  preorderEnabled?: boolean; preorderExpectedShipAt?: string;
   orderId?: string; lineNumber?: number; productId?: string; productName?: string; productSize?: string; variantId?: string; variantName?: string;
   shippingOptionId?: string; shippingOptionName?: string; shippingOptionPriceCents?: IntegerValue;
   unitPriceCents?: IntegerValue; quantity?: number; lineSubtotalCents?: IntegerValue; discountCents?: IntegerValue; shippingCents?: IntegerValue;

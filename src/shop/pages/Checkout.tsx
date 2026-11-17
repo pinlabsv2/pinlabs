@@ -32,6 +32,10 @@ export default function Checkout() {
   const [code, setCode] = useState('');
   const [applied, setApplied] = useState<{ code: string; discount: number; label: string } | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [researchAccepted, setResearchAccepted] = useState(false);
+  const [preorderAccepted, setPreorderAccepted] = useState(false);
+  const preorderSignature = JSON.stringify(lines.map((line) => [line.productId, line.variantId, line.preorderEnabled, line.preorderExpectedShipAt]));
+  useEffect(() => setPreorderAccepted(false), [preorderSignature]);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -76,6 +80,8 @@ export default function Checkout() {
 
   const submit = async () => {
     if (!data) return;
+    if (!researchAccepted) return toast.error('Confirm your age and research-only use.');
+    if (lines.some((line) => line.preorderEnabled) && !preorderAccepted) return toast.error('Accept the preorder dispatch dates and full payment.');
     const unavailable = lines.find((line) => {
       if (!line.available || !line.shippingOption) return true;
       const product = data.products.find((item) => item.id === line.productId);
@@ -100,7 +106,8 @@ export default function Checkout() {
     setBusy(true);
     try {
       const { id } = await createOrder({
-        items: lines.map((line) => ({ productId: line.productId, variantId: line.variantId, quantity: line.quantity })),
+        items: lines.map((line) => ({ productId: line.productId, variantId: line.variantId, preorderExpectedShipAt: line.preorderExpectedShipAt ?? null, quantity: line.quantity })),
+        researchOnly: true, confirmedMinimumAge: data.minimumAge === 21 ? 21 : 18, preorderAccepted,
         customerName: name,
         address,
         payCurrency: currency as any,
@@ -117,6 +124,8 @@ export default function Checkout() {
   return <div className="container mx-auto px-4 py-10 grid lg:grid-cols-[1fr_360px] gap-8">
     <div className="space-y-8">
       <h1 className="text-2xl font-bold">Checkout</h1>
+      <label className="flex gap-3 border p-4 text-sm"><input type="checkbox" checked={researchAccepted} onChange={(e) => setResearchAccepted(e.target.checked)} /><span>I am {data?.minimumAge ?? 18}+ (or the higher age required locally), qualified to handle these materials, and buying exclusively for lawful laboratory research, never human or veterinary use.</span></label>
+      {lines.some((line) => line.preorderEnabled) && <section className="border p-4 space-y-3 text-sm"><h2>preorder dispatch dates</h2>{lines.filter((line) => line.preorderEnabled).map((line) => <p key={cartLineKey(line)}>{line.name} · {line.preorderExpectedShipAt ? new Date(line.preorderExpectedShipAt).toLocaleDateString() : 'pending'}</p>)}<label className="flex gap-3"><input type="checkbox" checked={preorderAccepted} onChange={(e) => setPreorderAccepted(e.target.checked)} /><span>I understand these items are preorders, pay in full now, and accept the listed expected dispatch dates. Contact support if a date is missed; statutory cancellation and refund rights remain.</span></label></section>}
       <section className="space-y-4">
         <h2 className="font-semibold">Shipping</h2>
         <div><Label>Full name</Label><Input value={name} onChange={(event) => setName(event.target.value)} className="mt-1.5" />{errors.name && <p className="text-sm text-destructive mt-1">{errors.name}</p>}</div>

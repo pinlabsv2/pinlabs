@@ -6,6 +6,7 @@ import { Toaster } from '@/ui-kit/ui/sonner';
 import { CartProvider, useCart } from './lib/cart';
 import { useStorefront } from './lib/store';
 import Header from './components/Header';
+import ResearchGate from './components/ResearchGate';
 import ThemeColors from './components/ThemeColors';
 import Shop from './pages/Shop';
 import ProductPage from './pages/ProductPage';
@@ -58,6 +59,7 @@ export default function App() {
         <BrowserRouter>
           <div className="min-h-screen flex flex-col">
             <ThemeColors />
+            <ResearchGate>
             <Header />
             <main className="flex-1">
               <Routes>
@@ -75,6 +77,7 @@ export default function App() {
               </Routes>
             </main>
             <Footer />
+            </ResearchGate>
           </div>
           <Toaster />
         </BrowserRouter>

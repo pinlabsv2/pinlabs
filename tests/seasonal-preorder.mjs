@@ -1,0 +1,96 @@
+// No live providers or persistent database: compile the real server and test in-memory PGlite.
+import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
+import { mkdtempSync, writeFileSync, symlinkSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { resolve, join } from 'node:path';
+import { pathToFileURL } from 'node:url';
+const root = resolve(import.meta.dirname, '..');
+const output = mkdtempSync(join(tmpdir(), 'pinlabs-season-test-'));
+process.env.NODE_ENV = 'test';
+process.env.EMAIL_PROVIDER_MODE = 'fake';
+let database;
+try {
+  execFileSync(join(root, 'node_modules/.bin/tsc'), ['--project', join(root, 'tsconfig.json'), '--noEmit', 'false', '--outDir', output], { cwd: root, stdio: 'inherit' });
+  writeFileSync(join(output, 'package.json'), '{"type":"module"}');
+  symlinkSync(join(root, 'node_modules'), join(output, 'node_modules'), 'dir');
+  const mod = (name) => import(pathToFileURL(join(output, name)).href);
+  const pg = await mod('server/core/pg.js');
+  database = await pg.createDatabase({ databaseUrl: null, pgliteDir: ':memory:' });
+  await pg.installTestDatabase(database);
+  const { migrate } = await mod('server/core/schema.js');
+  await migrate(database);
+  assert.equal((await database.query('SELECT * FROM "SchemaMigrations"')).rows.length, 6);
+  const { default: products } = await mod('server/admin/api/manageProducts.js');
+  const { default: storefront } = await mod('server/shop/api/getStorefront.js');
+  const { default: settings } = await mod('server/admin/api/manageSettings.js');
+  const { default: checkout } = await mod('server/shop/api/createOrder.js');
+  const { releaseOrderReservation } = await mod('server/core/orderState.js');
+  const { toOrder } = await mod('server/shop/lib/server/orderShape.js');
+  const context = { user: { id: 'season-test-user', email: 'season-test@example.com', role: 'admin' }, setCookies: [], request: { method: 'POST', headers: {}, rawBody: new Uint8Array(), query: {} } };
+  await database.query(`INSERT INTO "Users" ("id","email","role") VALUES ($1,$2,'admin')`, [context.user.id, context.user.email]);
+  await database.query(`UPDATE "StoreSettings" SET "testMode"=true`);
+  await database.query(`INSERT INTO "ShippingOptions" ("id","name","price") VALUES ('test-option','Test warehouse',12)`);
+  const call = (endpoint, input) => endpoint.execute({ input: endpoint.inputSchema.parse(input), context });
+  const { seasons } = await mod('src/shared/seasons.js');
+  for (const seasonalTheme of seasons) {
+    await call(settings, { section: 'brand', settings: { storeName: 'Season test', primaryColor: '', accentColor: '', seasonalTheme, minimumAge: 21 } });
+    const shop = await call(storefront, {});
+    assert.equal(shop.theme.seasonal, seasonalTheme);
+    assert.equal(shop.minimumAge, 21);
+  }
+  assert.equal(settings.inputSchema.safeParse({ section: 'brand', settings: { storeName: 'Test', primaryColor: '', accentColor: '', seasonalTheme: 'unknown', minimumAge: 19 } }).success, false);
+  await assert.rejects(() => call(settings, { section: 'policies', settings: { termsOfService: '[COMPLETE: business]', privacyPolicy: '', shippingPolicy: '', refundPolicy: '' } }), /Complete|Incomplete/);
+  const date = new Date(Date.now() + 7 * 86400000).toISOString();
+  const draft = { name: 'Test preorder', description: '', price: 40, salePrice: null, size: '10mg', purity: '', category: '', imageUrl: '', stock: 2, active: true, featured: false, coaUrl: '', showCoa: false, hasVariants: false, shippingScope: 'product', shippingOptionId: 'test-option', subcategoryDividerId: null, variants: [], preorderEnabled: true, preorderExpectedShipAt: date };
+  const saved = await call(products, { action: 'save', product: draft });
+  const product = saved.products.find((p) => p.name === draft.name);
+  assert.equal(product.preorderEnabled, true);
+  const baseOrder = { items: [{ productId: product.id, variantId: null, quantity: 1, preorderExpectedShipAt: date }], customerName: 'Test Researcher', address: { street: 'Test street 1', city: 'Test city', postalCode: '12345', country: 'Germany' }, payCurrency: 'TEST', researchOnly: true, confirmedMinimumAge: 21, preorderAccepted: true };
+  assert.equal(checkout.inputSchema.safeParse({ ...baseOrder, researchOnly: false }).success, false);
+  await assert.rejects(() => call(checkout, { ...baseOrder, confirmedMinimumAge: 18 }), /minimum age/);
+  await assert.rejects(() => call(checkout, { ...baseOrder, preorderAccepted: false }), /Accept the preorder/);
+  await assert.rejects(() => call(checkout, { ...baseOrder, items: [{ ...baseOrder.items[0], preorderExpectedShipAt: null }] }), /date changed/);
+  const order = await call(checkout, baseOrder);
+  const row = (await database.query(`SELECT * FROM "Orders" WHERE "id"=$1`, [order.id])).rows[0];
+  assert.equal(row.acceptedMinimumAge, 21);
+  assert.ok(row.researchAcceptedAt);
+  const snapshot = toOrder(row).items[0];
+  assert.equal(snapshot.preorderEnabled, true);
+  const normalized = (await database.query(`SELECT "preorderEnabled", "preorderExpectedShipAt" FROM "OrderItems" WHERE "orderId"=$1`, [order.id])).rows[0];
+  assert.equal(normalized.preorderEnabled, true);
+  assert.equal(new Date(normalized.preorderExpectedShipAt).toISOString(), date);
+  assert.equal(snapshot.preorderExpectedShipAt, date);
+  assert.equal((await database.query(`SELECT "stock" FROM "Products" WHERE "id"=$1`, [product.id])).rows[0].stock, 1);
+  // Simulate an unpaid reservation to verify expiry's exact-once restoration.
+  await database.query(`UPDATE "Orders" SET "status"='Awaiting Payment' WHERE "id"=$1`, [order.id]);
+  assert.equal(await releaseOrderReservation(order.id, 'Expired'), true);
+  assert.equal(await releaseOrderReservation(order.id, 'Expired'), false);
+  assert.equal((await database.query(`SELECT "stock" FROM "Products" WHERE "id"=$1`, [product.id])).rows[0].stock, 2);
+  await database.query(`UPDATE "Products" SET "stock"=1 WHERE "id"=$1`, [product.id]);
+  const results = await Promise.allSettled([call(checkout, baseOrder), call(checkout, baseOrder)]);
+  assert.equal(results.filter((r) => r.status === 'fulfilled').length, 1);
+  assert.equal(results.filter((r) => r.status === 'rejected').length, 1);
+  // Independent variant preorder and inherited product-wide preorder both work.
+  const variants = [{ name: '20mg', price: 70, salePrice: null, stock: 2, shippingOptionId: null, active: true, sortOrder: 0, preorderEnabled: true, preorderExpectedShipAt: date }];
+  const variantSave = await call(products, { action: 'save', product: { ...draft, name: 'Variant preorder', hasVariants: true, preorderEnabled: false, preorderExpectedShipAt: null, variants } });
+  const parent = variantSave.products.find((p) => p.name === 'Variant preorder');
+  const variant = parent.variants[0];
+  const vOrder = await call(checkout, { ...baseOrder, items: [{ productId: parent.id, variantId: variant.id, quantity: 1, preorderExpectedShipAt: date }] });
+  assert.equal((await database.query(`SELECT "stock" FROM "ProductVariants" WHERE "id"=$1`, [variant.id])).rows[0].stock, 1);
+  await database.query(`UPDATE "Orders" SET "status"='Awaiting Payment' WHERE "id"=$1`, [vOrder.id]);
+  await releaseOrderReservation(vOrder.id, 'Cancelled');
+  assert.equal((await database.query(`SELECT "stock" FROM "ProductVariants" WHERE "id"=$1`, [variant.id])).rows[0].stock, 2);
+  await call(products, { action: 'save', product: { ...parent, preorderEnabled: true, preorderExpectedShipAt: date, variants: [{ ...variant, preorderEnabled: false, preorderExpectedShipAt: null }] } });
+  const inherited = (await call(storefront, {})).products.find((p) => p.id === parent.id).variants[0];
+  assert.equal(inherited.preorderEnabled, true);
+  assert.equal(inherited.preorderExpectedShipAt, date);
+  await assert.rejects(() => call(products, { action: 'save', product: { ...draft, name: 'Invalid unlimited', stock: null } }), /finite/);
+  await database.query(`UPDATE "Products" SET "preorderExpectedShipAt"=now()-interval '1 day' WHERE "id"=$1`, [parent.id]);
+  const past = (await call(storefront, {})).products.find((p) => p.id === parent.id);
+  assert.equal(past.variants[0].purchasable, false);
+  console.log('PASS: repeat migrations, all themes, policy draft guard, age/research checks, preorder acceptance/date snapshots, parent+variant allocation, concurrent last slot, exact-once restoration and inheritance.');
+} finally {
+  if (database) await database.close();
+  rmSync(output, { recursive: true, force: true });
+}

@@ -5,6 +5,8 @@ type StoreProduct = GetStorefrontOutputType['products'][0];
 type ShippingOption = StoreProduct['shippingOption'];
 
 export type CartLine = {
+  preorderEnabled?: boolean;
+  preorderExpectedShipAt?: string | null;
   productId: string;
   variantId: string | null;
   productName: string;
@@ -85,6 +87,7 @@ function resolveLine(line: CartLine, products: StoreProduct[]): CartLine {
     const available = variant.purchasable && !!variant.shippingOption && (stock == null || stock > 0);
     return {
       ...line,
+      preorderEnabled: variant.preorderEnabled, preorderExpectedShipAt: variant.preorderExpectedShipAt,
       productName: product.name,
       variantName: variant.name,
       name: `${product.name} — ${variant.name}`,
@@ -104,6 +107,7 @@ function resolveLine(line: CartLine, products: StoreProduct[]): CartLine {
   const available = product.purchasable && !!product.shippingOption && (stock == null || stock > 0);
   return {
     ...line,
+    preorderEnabled: product.preorderEnabled, preorderExpectedShipAt: product.preorderExpectedShipAt,
     productName: product.name,
     variantName: '',
     name: product.name,
@@ -121,7 +125,7 @@ function resolveLine(line: CartLine, products: StoreProduct[]): CartLine {
 export function CartProvider({ children }: { children: ReactNode }) {
   const [lines, setLines] = useState<CartLine[]>(loadCart);
   useEffect(() => {
-    localStorage.setItem(KEY, JSON.stringify({ version: 2, lines } satisfies PersistedCart));
+    try { localStorage.setItem(KEY, JSON.stringify({ version: 2, lines } satisfies PersistedCart)); } catch { /* Keep the in-memory cart usable when storage is unavailable. */ }
   }, [lines]);
 
   const add: CartCtx['add'] = (line, quantity = 1) => setLines((current) => {

@@ -26,6 +26,8 @@ const policiesSchema = z.object({
   refundPolicy: z.string().max(100_000),
 });
 const brandSchema = z.object({
+  seasonalTheme: z.enum(['default','summer','winter','fall','spring','halloween','black-friday','christmas','new-year','valentines','easter']).default('default'),
+  minimumAge: z.union([z.literal(18), z.literal(21)]).default(18),
   storeName: z.string().trim().min(1).max(120),
   primaryColor: optionalHex,
   accentColor: optionalHex,
@@ -54,7 +56,7 @@ const defaults = {
   },
   email: { adminEmail: '' },
   policies: { termsOfService: '', privacyPolicy: '', shippingPolicy: '', refundPolicy: '' },
-  brand: { storeName: 'PinLabs', primaryColor: '', accentColor: '' },
+  brand: { seasonalTheme: 'default', minimumAge: 18, storeName: 'PinLabs', primaryColor: '', accentColor: '' },
   promotions: { promoActive: false, promoTitle: '', promoSubtitle: '', promoCode: '' },
 } as const;
 
@@ -72,6 +74,7 @@ export default createEndpoint({
   description: 'Reads or updates one owned section of store settings',
   inputSchema,
   execute: async ({ input, context }) => {
+    if (input.section === 'policies' && input.settings && Object.values(input.settings).some((value) => value.includes('[COMPLETE:'))) throw new AppError({ code: 'BAD_REQUEST', message: 'Incomplete policy template', userFacingMessage: 'Complete every marked policy detail before publishing.' });
     if (input.settings) {
       await db.transaction(async (tx) => {
         let { rows } = await tx.query(`SELECT * FROM "StoreSettings" ORDER BY "createdAt" LIMIT 1 FOR UPDATE`);

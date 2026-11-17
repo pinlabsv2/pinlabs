@@ -8,6 +8,8 @@ const variantBaseSchema = z.object({
   price: z.number().finite().min(0),
   salePrice: z.number().finite().min(0).nullable(),
   stock: z.number().int().min(0).nullable(),
+  preorderEnabled: z.boolean().default(false),
+  preorderExpectedShipAt: z.string().datetime().nullable().default(null),
   shippingOptionId: z.string().nullable(),
   active: z.boolean(),
   sortOrder: z.number().int().min(0),
@@ -29,6 +31,8 @@ const productBaseSchema = z.object({
   category: z.string().trim().max(200),
   imageUrl: z.string().max(4000),
   stock: z.number().int().min(0).nullable(),
+  preorderEnabled: z.boolean().default(false),
+  preorderExpectedShipAt: z.string().datetime().nullable().default(null),
   active: z.boolean(),
   featured: z.boolean(),
   coaUrl: z.string().max(4000),
@@ -68,6 +72,7 @@ async function listProducts() {
     const variant = {
       id: String(row.id), name: String(row.name ?? ''), price: Number(row.price ?? 0),
       salePrice: typeof row.salePrice === 'number' ? row.salePrice : null,
+      preorderEnabled: row.preorderEnabled === true, preorderExpectedShipAt: row.preorderExpectedShipAt ? new Date(row.preorderExpectedShipAt as string).toISOString() : null,
       stock: typeof row.stock === 'number' ? row.stock : null,
       shippingOptionId: typeof row.shippingOptionId === 'string' ? row.shippingOptionId : null,
       active: row.active !== false, sortOrder: Number(row.sortOrder ?? 0),
@@ -94,6 +99,7 @@ async function listProducts() {
       id: String(row.id), name: String(row.name ?? ''), description: String(row.description ?? ''), price: Number(row.price ?? 0),
       salePrice: typeof row.salePrice === 'number' ? row.salePrice : null, size: String(row.size ?? ''), purity: String(row.purity ?? ''),
       category: String(row.category ?? ''), imageUrl: String(row.imageUrl ?? ''), stock: typeof row.stock === 'number' ? row.stock : null,
+      preorderEnabled: row.preorderEnabled === true, preorderExpectedShipAt: row.preorderExpectedShipAt ? new Date(row.preorderExpectedShipAt as string).toISOString() : null,
       active: row.active === true, featured: row.featured === true, coaUrl: String(row.coaUrl ?? ''), showCoa: row.showCoa === true,
       hasVariants, shippingScope, shippingOptionId: typeof row.shippingOptionId === 'string' ? row.shippingOptionId : null,
       subcategoryDividerId: typeof row.subcategoryDividerId === 'string' ? row.subcategoryDividerId : null,
@@ -126,6 +132,11 @@ async function validateReferences(tx: { query: (query: string, params?: unknown[
 }
 
 function validateConfiguration(product: z.infer<typeof productSchema>) {
+  for (const sku of [product, ...product.variants]) {
+    if (sku.preorderEnabled && (!sku.preorderExpectedShipAt || new Date(sku.preorderExpectedShipAt).getTime() <= Date.now())) throw bad('Preorders need a future expected dispatch date.');
+    if (sku.preorderEnabled && sku.stock == null && (!product.hasVariants || sku !== product)) throw bad('Set a finite stock allocation for preorders.');
+  }
+  if (product.preorderEnabled && product.hasVariants && product.variants.some((v) => v.active && v.stock == null)) throw bad('Every preorder variant needs a finite stock allocation.');
   const ids = product.variants.flatMap((variant) => variant.id ? [variant.id] : []);
   if (new Set(ids).size !== ids.length) throw bad('A variant was submitted more than once.');
   if (!product.hasVariants) {
@@ -182,6 +193,7 @@ export default createEndpoint({
           );
         }
 
+        await tx.query(`UPDATE "Products" SET "preorderEnabled"=$2, "preorderExpectedShipAt"=$3 WHERE "id"=$1`, [productId, product.preorderEnabled, product.preorderExpectedShipAt]);
         const existing = await tx.query(`SELECT "id" FROM "ProductVariants" WHERE "productId" = $1 FOR UPDATE`, [productId]);
         const existingIds = new Set(existing.rows.map((row) => String(row.id)));
         const keptIds = new Set<string>();
@@ -203,6 +215,7 @@ export default createEndpoint({
               [variantId, productId, variant.name, variant.price, variant.salePrice, variant.stock, shippingOptionId, variant.active, variant.sortOrder],
             );
           }
+          await tx.query(`UPDATE "ProductVariants" SET "preorderEnabled"=$2, "preorderExpectedShipAt"=$3 WHERE "id"=$1`, [variantId, variant.preorderEnabled, variant.preorderExpectedShipAt]);
         }
         for (const existingId of existingIds) {
           if (!keptIds.has(existingId)) await tx.query(`DELETE FROM "ProductVariants" WHERE "id" = $1 AND "productId" = $2`, [existingId, productId]);

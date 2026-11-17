@@ -28,6 +28,7 @@ export default function CartPage() {
             <Link to={`/product/${line.productId}`} className="font-medium hover:text-primary">{line.name}</Link>
             <p className="text-xs font-mono text-muted-foreground">{line.size} · {usd(line.price)}</p>
             {line.shippingOption && <p className="text-xs text-muted-foreground">Ships from {line.shippingOption.name}</p>}
+            {line.preorderEnabled && <p className="text-xs text-primary">Preorder · full payment now · expected dispatch {line.preorderExpectedShipAt ? new Date(line.preorderExpectedShipAt).toLocaleDateString() : "pending"}</p>}
             {!line.available && <p className="mt-1 text-xs text-destructive">{line.unavailableReason}</p>}
           </div>
           <div className="flex items-center border">

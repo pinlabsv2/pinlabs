@@ -44,6 +44,7 @@ export default function ProductCard({ p }: { p: Product }) {
       <Link to={`/product/${p.id}`} className="font-semibold leading-tight hover:text-primary">{p.name}</Link>
       {p.shippingOption && <p className="text-xs text-muted-foreground">Ships from {p.shippingOption.name}</p>}
       {p.hasVariants && p.shippingScope === 'variant' && <p className="text-xs text-muted-foreground">Origin shown with each variant</p>}
+      {(p.preorderEnabled || p.variants.some((v) => v.preorderEnabled)) && <p className="text-xs font-medium text-primary">{p.hasVariants ? 'Preorder options available' : `Preorder · dispatch ${p.preorderExpectedShipAt ? new Date(p.preorderExpectedShipAt).toLocaleDateString() : 'pending'}`}</p>}
       {unavailable && <p className="text-xs text-destructive">{p.unavailableReason}</p>}
       <div className="mt-auto pt-3 flex items-center justify-between gap-3">
         <Price p={p} />
@@ -53,10 +54,10 @@ export default function ProductCard({ p }: { p: Product }) {
           disabled={unavailable}
           onClick={() => {
             if (!p.shippingOption) return;
-            add({ productId: p.id, variantId: null, productName: p.name, variantName: '', name: p.name, price: p.salePrice ?? p.price, size: p.size, imageUrl: p.imageUrl, stock: p.stock, shippingOption: p.shippingOption });
+            add({ preorderEnabled: p.preorderEnabled, preorderExpectedShipAt: p.preorderExpectedShipAt, productId: p.id, variantId: null, productName: p.name, variantName: '', name: p.name, price: p.salePrice ?? p.price, size: p.size, imageUrl: p.imageUrl, stock: p.stock, shippingOption: p.shippingOption });
             toast.success(`${p.name} added to cart`);
           }}
-        >{unavailable ? 'Unavailable' : <><Plus className="size-4" />Add</>}</Button>}
+        >{unavailable ? 'Unavailable' : <><Plus className="size-4" />{p.preorderEnabled ? 'Preorder' : 'Add'}</>}</Button>}
       </div>
     </div>
   </article>;
